@@ -224,16 +224,15 @@ p {
   width: 100%;
   max-width: 1100px;
   margin-bottom: 24px;
-  padding: 16px;
+  padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
+  border-radius: 26px;
   background: rgba(255, 255, 255, 0.045);
   backdrop-filter: blur(10px);
 
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
   align-items: center;
+  gap: 16px;
 }
 
 .input-group {
@@ -243,12 +242,12 @@ p {
 }
 
 .reset-button {
-  border: none;
-  border-radius: 14px;
-  padding: 14px 18px;
-  font-size: 15px;
+  border-radius: 18px;
+  padding: 18px 22px;
+  font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
+  white-space: nowrap;
   transition:
     transform 0.15s ease,
     background 0.15s ease,
