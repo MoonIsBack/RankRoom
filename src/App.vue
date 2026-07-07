@@ -1,4 +1,5 @@
 <template>
+  <AppHeader />
   <main class="app">
     <header class="app-header">
       <div>
@@ -27,6 +28,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import AppHeader from "./components/AppHeader.vue";
 import TierRow from './components/TierRow.vue'
 import StatsGrid from "./components/StatsGrid.vue";
 import AddItemForm from "./components/AddItemForm.vue";
@@ -262,5 +264,4 @@ p {
   transform: translateY(-1px);
   background: rgba(255, 92, 92, 0.18);
 }
-
 </style>
