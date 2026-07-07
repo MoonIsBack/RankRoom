@@ -1,7 +1,7 @@
 <template>
   <AppHeader />
   <main class="app">
-    <header class="app-header">
+    <header class="hero-header">
       <div>
         <span class="app-badge">Tierlist Builder</span>
         <h1>RankRoom</h1>
@@ -179,7 +179,7 @@ function confirmReset() {
   align-items: center;
 }
 
-.app-header {
+.hero-header {
   max-width: 1100px;
   margin-bottom: 30px;
   width: 100%;
