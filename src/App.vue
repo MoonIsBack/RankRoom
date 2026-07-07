@@ -1,35 +1,55 @@
 <template>
-  <AppHeader />
-  <main class="app">
-    <header class="hero-header">
-      <div>
-        <span class="app-badge">Tierlist Builder</span>
-        <h1>RankRoom</h1>
-        <p>Erstelle, sortiere und vergleiche deine eigenen Rankings.</p>
-      </div>
-    </header>
+  <div class="page">
+    <AppHeader />
 
-    <StatsGrid :total-items="totalItemCount" :ranked-items="rankedItemCount" :unranked-items="unrankedItemCount" />
+    <main class="app">
+      <HeroSection :total-items="totalItemCount" />
 
-    <section class="tierlist">
-      <TierRow v-for="tier in tiers" :key="tier.name" :name="tier.name" :color="tier.color" :items="tier.items"
-        @drop-item="dropItem(tier.name)" @drag-start="startDragFromTier($event, tier.name)" />
-    </section>
+      <StatsGrid
+        :total-items="totalItemCount"
+        :ranked-items="rankedItemCount"
+        :unranked-items="unrankedItemCount"
+      />
 
-    <section class="control-panel">
-      <AddItemForm @add-item="addItem" />
-      <button class="reset-button" @click="openResetModal">Zurücksetzen</button>
-    </section>
+      <section class="tierlist">
+        <TierRow
+          v-for="tier in tiers"
+          :key="tier.name"
+          :name="tier.name"
+          :color="tier.color"
+          :items="tier.items"
+          @drop-item="dropItem(tier.name)"
+          @drag-start="startDragFromTier($event, tier.name)"
+        />
+      </section>
 
-    <ItemPool :items="items" @delete-item="deleteItem" @drag-start="startDrag" @drop-to-pool="dropItemToPool" />
-    <ResetModal v-if="showResetModal" @cancel="closeResetModal" @confirm="confirmReset" />
-  </main>
+      <section class="control-panel">
+        <AddItemForm @add-item="addItem" />
+        <button class="reset-button" @click="openResetModal">Zurücksetzen</button>
+      </section>
+
+      <ItemPool
+        :items="items"
+        @delete-item="deleteItem"
+        @drag-start="startDrag"
+        @drop-to-pool="dropItemToPool"
+      />
+
+      <ResetModal
+        v-if="showResetModal"
+        @cancel="closeResetModal"
+        @confirm="confirmReset"
+      />
+    </main>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed } from "vue";
+
 import AppHeader from "./components/AppHeader.vue";
-import TierRow from './components/TierRow.vue'
+import HeroSection from "./components/HeroSection.vue";
+import TierRow from "./components/TierRow.vue";
 import StatsGrid from "./components/StatsGrid.vue";
 import AddItemForm from "./components/AddItemForm.vue";
 import ResetModal from "./components/ResetModal.vue";
@@ -41,9 +61,9 @@ import { defaultTiers } from "./data/defaultTiers";
 const tiers = ref(structuredClone(defaultTiers));
 const items = ref(structuredClone(defaultItems));
 
-const draggedItem = ref(null)
-const draggedFromTier = ref(null)
-const showResetModal = ref(false)
+const draggedItem = ref(null);
+const draggedFromTier = ref(null);
+const showResetModal = ref(false);
 
 const rankedItemCount = computed(() => {
   return tiers.value.reduce((total, tier) => {
@@ -75,151 +95,125 @@ function addItem(itemName) {
 }
 
 function deleteItem(itemId) {
-  items.value = items.value.filter((item) => item.id !== itemId)
+  items.value = items.value.filter((item) => item.id !== itemId);
 }
 
 function startDrag(item) {
-  draggedItem.value = item
-  draggedFromTier.value = null
+  draggedItem.value = item;
+  draggedFromTier.value = null;
 }
 
 function startDragFromTier(item, tierName) {
-  draggedItem.value = item
-  draggedFromTier.value = tierName
+  draggedItem.value = item;
+  draggedFromTier.value = tierName;
 }
 
 function dropItem(tierName) {
   if (!draggedItem.value) {
-    return
+    return;
   }
 
-  const targetTier = tiers.value.find((tier) => tier.name === tierName)
+  const targetTier = tiers.value.find((tier) => tier.name === tierName);
 
   if (!targetTier) {
-    return
+    return;
   }
 
   if (draggedFromTier.value) {
-    const oldTier = tiers.value.find((tier) => tier.name === draggedFromTier.value)
+    const oldTier = tiers.value.find((tier) => tier.name === draggedFromTier.value);
 
     if (oldTier) {
-      oldTier.items = oldTier.items.filter((item) => item.id !== draggedItem.value.id)
+      oldTier.items = oldTier.items.filter((item) => item.id !== draggedItem.value.id);
     }
   } else {
-    items.value = items.value.filter((item) => item.id !== draggedItem.value.id)
+    items.value = items.value.filter((item) => item.id !== draggedItem.value.id);
   }
 
-  targetTier.items.push(draggedItem.value)
+  targetTier.items.push(draggedItem.value);
 
-  draggedItem.value = null
-  draggedFromTier.value = null
+  draggedItem.value = null;
+  draggedFromTier.value = null;
 }
 
 function dropItemToPool() {
   if (!draggedItem.value) {
-    return
+    return;
   }
 
   if (!draggedFromTier.value) {
-    return
+    return;
   }
 
-  const oldTier = tiers.value.find((tier) => tier.name === draggedFromTier.value)
+  const oldTier = tiers.value.find((tier) => tier.name === draggedFromTier.value);
 
   if (!oldTier) {
-    return
+    return;
   }
 
-  oldTier.items = oldTier.items.filter((item) => item.id !== draggedItem.value.id)
+  oldTier.items = oldTier.items.filter((item) => item.id !== draggedItem.value.id);
 
-  items.value.push(draggedItem.value)
+  items.value.push(draggedItem.value);
 
-  draggedItem.value = null
-  draggedFromTier.value = null
+  draggedItem.value = null;
+  draggedFromTier.value = null;
 }
 
 function openResetModal() {
-  showResetModal.value = true
+  showResetModal.value = true;
 }
 
 function closeResetModal() {
-  showResetModal.value = false
+  showResetModal.value = false;
 }
 
 function confirmReset() {
-  items.value = structuredClone(defaultItems)
-  tiers.value = structuredClone(defaultTiers)
+  items.value = structuredClone(defaultItems);
+  tiers.value = structuredClone(defaultTiers);
 
-  draggedItem.value = null
-  draggedFromTier.value = null
+  draggedItem.value = null;
+  draggedFromTier.value = null;
 
-  showResetModal.value = false
+  showResetModal.value = false;
 }
-
 </script>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+
+  background: radial-gradient(
+      circle at top left,
+      rgba(124, 58, 237, 0.2),
+      transparent 34%
+    ),
+    radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.16), transparent 32%),
+    #0b0b0f;
+
+  color: white;
+}
 .app {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(127, 156, 255, 0.18), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(255, 92, 92, 0.12), transparent 35%), #0b0b0f;
+  padding: 25px 40px 50px;
   color: white;
-  padding: 40px;
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.hero-header {
-  max-width: 1100px;
-  margin-bottom: 30px;
-  width: 100%;
-}
-
-.app-badge {
-  display: inline-block;
-  margin-bottom: 12px;
-  padding: 7px 12px;
-  border: 1px solid rgba(127, 156, 255, 0.35);
-  border-radius: 999px;
-  background: rgba(127, 156, 255, 0.12);
-  color: #aebdff;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-}
-
-h1 {
-  margin: 0;
-  font-size: 56px;
-  line-height: 1;
-  letter-spacing: -2px;
-}
-
-p {
-  margin-top: 12px;
-  color: #a8a8b3;
-  font-size: 18px;
-}
-
 .tierlist {
   width: 100%;
   max-width: 1100px;
   overflow: hidden;
+
+  margin-bottom: 24px;
+
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
+  border-radius: 22px;
+
   background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
-  margin-bottom: 24px;
 }
 
 .control-panel {
@@ -227,8 +221,10 @@ p {
   max-width: 1100px;
   margin-bottom: 24px;
   padding: 18px;
+
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 26px;
+
   background: rgba(255, 255, 255, 0.045);
   backdrop-filter: blur(10px);
 
@@ -237,31 +233,40 @@ p {
   gap: 16px;
 }
 
-.input-group {
-  display: flex;
-  gap: 12px;
-  flex: 1;
-}
-
 .reset-button {
-  border-radius: 18px;
   padding: 18px 22px;
-  font-size: 1rem;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    transform 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+
+  border: 1px solid rgba(255, 92, 92, 0.28);
+  border-radius: 18px;
 
   background: rgba(255, 92, 92, 0.12);
   color: #ff9b9b;
-  border: 1px solid rgba(255, 92, 92, 0.28);
+
+  font-size: 1rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .reset-button:hover {
   transform: translateY(-1px);
   background: rgba(255, 92, 92, 0.18);
+}
+
+@media (max-width: 850px) {
+  .app {
+    padding: 30px 18px 50px;
+  }
+
+  .control-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reset-button {
+    width: 100%;
+  }
 }
 </style>

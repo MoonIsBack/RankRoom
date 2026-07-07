@@ -1,42 +1,69 @@
 <template>
-  <header class="app-header">
-    <button class="brand" @click="$emit('go-home')">
-      <div class="brand-logo">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
+  <header class="top-header">
+    <div class="header-shell">
+      <button class="brand" @click="$emit('go-home')">
+        <img class="brand-logo" src="/rankroom-icon.svg" alt="RankRoom Logo" />
 
-      <div class="brand-text">
-        <strong>RankRoom</strong>
-        <small>Tierlist App</small>
-      </div>
-    </button>
-
-    <nav class="header-actions">
-      <button class="header-button primary">
-        Neue Tierlist
+        <strong class="brand-name">RankRoom</strong>
       </button>
 
-      <div class="menu-wrapper">
-        <button
-          class="menu-button"
-          aria-label="Menü öffnen"
-          @click="toggleMenu"
-        >
-          ☰
-        </button>
+      <nav class="desktop-nav">
+        <button class="nav-link active">Dashboard</button>
+        <button class="nav-link">Vorlagen</button>
+        <button class="nav-link">Community</button>
+      </nav>
 
-        <div v-if="isMenuOpen" class="dropdown-menu">
-          <button>Neue Tierlist</button>
-          <button>Gespeicherte Tierlists</button>
-          <button>Exportieren</button>
-          <button>Importieren</button>
-        </div>
+      <div class="header-actions">
+        <button class="create-button">Neue Tierlist</button>
+
+        <button class="menu-button" aria-label="Menü öffnen" @click="openMenu">
+          <span></span>
+          <span></span>
+        </button>
       </div>
-    </nav>
+    </div>
   </header>
+
+  <div v-if="isMenuOpen" class="menu-overlay" @click="closeMenu"></div>
+
+  <aside :class="['side-menu', { open: isMenuOpen }]">
+    <div class="side-menu-header">
+      <div>
+        <p class="menu-label">RankRoom</p>
+        <h2>Menü</h2>
+      </div>
+
+      <button class="close-button" aria-label="Menü schließen" @click="closeMenu">
+        ✕
+      </button>
+    </div>
+
+    <div class="side-menu-content">
+      <button class="side-menu-item">
+        <span>▣</span>
+        Gespeicherte Tierlists
+      </button>
+
+      <button class="side-menu-item">
+        <span>⬇</span>
+        Exportieren
+      </button>
+
+      <button class="side-menu-item">
+        <span>⬆</span>
+        Importieren
+      </button>
+
+      <button class="side-menu-item">
+        <span>⚙</span>
+        Einstellungen
+      </button>
+    </div>
+
+    <div class="side-menu-footer">
+      <p>Später speichern wir hier mehrere Tierlists mit LocalStorage.</p>
+    </div>
+  </aside>
 </template>
 
 <script setup>
@@ -46,27 +73,57 @@ defineEmits(["go-home"]);
 
 const isMenuOpen = ref(false);
 
-function toggleMenu() {
-  isMenuOpen.value = !isMenuOpen.value;
+function openMenu() {
+  isMenuOpen.value = true;
+}
+
+function closeMenu() {
+  isMenuOpen.value = false;
 }
 </script>
 
 <style scoped>
-.app-header {
+.top-header {
   width: 100%;
-  min-height: 72px;
-  padding: 0 32px;
-  background: rgba(10, 10, 14, 0.92);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px 28px 0;
+
+  background: transparent;
+
+  color: white;
+  position: relative;
+  z-index: 20;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.header-shell {
+  width: 100%;
+  min-height: 74px;
+  padding: 0 18px 0 20px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)),
+    rgba(16, 16, 22, 0.68);
+
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  backdrop-filter: blur(18px);
 
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(14px);
+  gap: 24px;
 }
 
 .brand {
@@ -77,7 +134,7 @@ function toggleMenu() {
 
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 13px;
 
   padding: 0;
 }
@@ -86,36 +143,53 @@ function toggleMenu() {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #7c3aed, #22c55e);
-
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-  padding: 8px;
+  object-fit: cover;
 }
 
-.brand-logo span {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 4px;
+.brand-name {
+  font-size: 1.45rem;
+  font-weight: 950;
+  letter-spacing: -0.06em;
 }
 
-.brand-text {
+.desktop-nav {
+  padding: 5px;
+
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.1;
+  align-items: center;
+  gap: 4px;
 }
 
-.brand-text strong {
-  font-size: 1.35rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-}
+.nav-link {
+  border: none;
+  border-radius: 999px;
 
-.brand-text small {
-  margin-top: 4px;
+  padding: 10px 15px;
+
+  background: transparent;
   color: #9ca3af;
-  font-size: 0.78rem;
+
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.nav-link.active {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .header-actions {
@@ -124,107 +198,275 @@ function toggleMenu() {
   gap: 12px;
 }
 
-.header-button,
-.menu-button {
-  border: none;
+.create-button {
+  border: 1px solid rgba(255, 255, 255, 0.09);
   cursor: pointer;
+
+  padding: 13px 18px;
+  border-radius: 999px;
+
   color: white;
-  font-weight: 800;
+  font-size: 0.92rem;
+  font-weight: 900;
+
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.055)),
+    rgba(255, 255, 255, 0.06);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 
   transition:
     transform 0.2s ease,
-    background 0.2s ease;
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.header-button {
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.header-button.primary {
-  background: linear-gradient(135deg, #7c3aed, #2563eb);
-}
-
-.menu-wrapper {
-  position: relative;
+.create-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .menu-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 1.4rem;
-}
+  width: 48px;
+  height: 48px;
 
-.header-button:hover,
-.menu-button:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.header-button.primary:hover {
-  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 56px;
-  right: 0;
-
-  width: 230px;
-  padding: 10px;
-
-  background: rgba(18, 18, 24, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+
+  background: rgba(255, 255, 255, 0.055);
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+
+  position: relative;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.menu-button span {
+  position: absolute;
+
+  width: 20px;
+  height: 2px;
+
+  border-radius: 999px;
+  background: white;
+
+  transition:
+    transform 0.2s ease,
+    width 0.2s ease;
+}
+
+.menu-button span:first-child {
+  transform: translateY(-4px);
+}
+
+.menu-button span:last-child {
+  width: 14px;
+  transform: translateY(4px);
+}
+
+.menu-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.105);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.menu-button:hover span:last-child {
+  width: 20px;
+}
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(6px);
+}
+
+.side-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+
+  width: 410px;
+  max-width: 90vw;
+  height: 100vh;
+
+  background:
+    radial-gradient(circle at top right, rgba(80, 88, 120, 0.16), transparent 34%),
+    #101016;
+
+  border-left: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: -30px 0 70px rgba(0, 0, 0, 0.55);
+
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
 
   display: flex;
   flex-direction: column;
-  gap: 6px;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
-.dropdown-menu button {
-  width: 100%;
-  padding: 12px 14px;
+.side-menu.open {
+  transform: translateX(0);
+}
+
+.side-menu-header {
+  padding: 30px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.menu-label {
+  margin: 0 0 6px;
+
+  color: #9ca3af;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.side-menu-header h2 {
+  margin: 0;
+  font-size: 2.15rem;
+  letter-spacing: -0.06em;
+}
+
+.close-button {
+  width: 44px;
+  height: 44px;
 
   border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: #e5e7eb;
+  border-radius: 16px;
 
-  text-align: left;
-  font-size: 0.95rem;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.075);
+  color: white;
+
+  font-size: 1.05rem;
+  font-weight: 950;
   cursor: pointer;
 
   transition:
     background 0.2s ease,
-    color 0.2s ease;
+    transform 0.2s ease;
 }
 
-.dropdown-menu button:hover {
-  background: rgba(255, 255, 255, 0.08);
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.13);
+  transform: rotate(6deg);
+}
+
+.side-menu-content {
+  padding: 22px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.side-menu-item {
+  width: 100%;
+  padding: 17px 18px;
+
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.045);
   color: white;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 850;
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.side-menu-item span {
+  width: 32px;
+  height: 32px;
+
+  border-radius: 13px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(255, 255, 255, 0.085);
+}
+
+.side-menu-item:hover {
+  background: rgba(255, 255, 255, 0.085);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateX(-4px);
+}
+
+.side-menu-footer {
+  margin-top: auto;
+  padding: 25px 30px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.side-menu-footer p {
+  margin: 0;
+  color: #8f96a3;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .desktop-nav {
+    display: none;
+  }
 }
 
 @media (max-width: 700px) {
-  .app-header {
-    padding: 0 18px;
+  .top-header {
+    padding: 12px 14px 0;
   }
 
-  .brand-text small {
+  .header-shell {
+    padding: 0 12px;
+    border-radius: 22px;
+  }
+
+  .create-button {
     display: none;
   }
 
-  .header-button {
-    display: none;
-  }
-
-  .dropdown-menu {
-    width: 220px;
+  .side-menu {
+    width: 100%;
+    max-width: 100vw;
   }
 }
 </style>
