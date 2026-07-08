@@ -14,7 +14,9 @@
       </nav>
 
       <div class="header-actions">
-        <button class="create-button">Neue Tierlist</button>
+        <button class="create-button" @click="openNewTierList">
+          Neue Tierlist
+        </button>
 
         <button class="menu-button" aria-label="Menü öffnen" @click="openMenu">
           <span></span>
@@ -39,7 +41,7 @@
     </div>
 
     <div class="side-menu-content">
-      <button class="side-menu-item">
+      <button class="side-menu-item" @click="openSavedLists">
         <span>▣</span>
         Gespeicherte Tierlists
       </button>
@@ -69,7 +71,7 @@
 <script setup>
 import { ref } from "vue";
 
-defineEmits(["go-home"]);
+const emit = defineEmits(["go-home", "open-saved-lists", "new-tier-list"]);
 
 const isMenuOpen = ref(false);
 
@@ -79,6 +81,16 @@ function openMenu() {
 
 function closeMenu() {
   isMenuOpen.value = false;
+}
+
+function openSavedLists() {
+  closeMenu();
+  emit("open-saved-lists");
+}
+
+function openNewTierList() {
+  closeMenu();
+  emit("new-tier-list");
 }
 </script>
 

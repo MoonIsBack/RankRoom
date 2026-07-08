@@ -1,15 +1,15 @@
-const STORAGE_KEY = "rankroom-tierlist";
+const STORAGE_KEY = "rankroom-tierlists";
 
-export function saveTierList(items, tiers) {
+export function saveTierLists(activeTierListId, tierLists) {
   const data = {
-    items,
-    tiers,
+    activeTierListId,
+    tierLists,
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function loadTierList() {
+export function loadTierLists() {
   const savedData = localStorage.getItem(STORAGE_KEY);
 
   if (!savedData) {

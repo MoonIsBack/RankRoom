@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <AppHeader />
+    <AppHeader @open-saved-lists="openSavedListsModal" @new-tier-list="openNewTierListModal" />
 
     <main class="app">
       <HeroSection :total-items="totalItemCount" />
@@ -20,6 +20,9 @@
       <ItemPool :items="items" @delete-item="deleteItem" @drag-start="startDrag" @drop-to-pool="dropItemToPool" />
 
       <ResetModal v-if="showResetModal" @cancel="closeResetModal" @confirm="confirmReset" />
+      <SavedListsModal v-if="showSavedListsModal" :saved-lists="savedLists" @close="closeSavedListsModal"
+        @open-list="openTierList" />
+      <NewTierListModal v-if="showNewTierListModal" @close="closeNewTierListModal" @create="createNewTierList" />
     </main>
   </div>
 </template>
@@ -33,30 +36,71 @@ import TierRow from "./components/TierRow.vue";
 import StatsGrid from "./components/StatsGrid.vue";
 import AddItemForm from "./components/AddItemForm.vue";
 import ResetModal from "./components/ResetModal.vue";
+import SavedListsModal from "./components/SavedListsModal.vue";
+import NewTierListModal from "./components/NewTierListModal.vue";
 import ItemPool from "./components/ItemPool.vue";
 
 import { defaultItems } from "./data/defaultItems";
 import { defaultTiers } from "./data/defaultTiers";
 
 import {
-  saveTierList,
-  loadTierList,
-  clearTierListStorage,
+  saveTierLists,
+  loadTierLists,
 } from "./storage/tierListStorage";
 
-const savedTierList = loadTierList();
+const savedData = loadTierLists();
 
-const tiers = ref(
-  savedTierList ? savedTierList.tiers : structuredClone(defaultTiers)
+const defaultTierList = {
+  id: "default",
+  name: "RankRoom Default",
+  items: structuredClone(defaultItems),
+  tiers: structuredClone(defaultTiers),
+};
+
+const tierLists = ref(savedData ? savedData.tierLists : [defaultTierList]);
+
+const activeTierListId = ref(
+  savedData ? savedData.activeTierListId : defaultTierList.id
 );
 
-const items = ref(
-  savedTierList ? savedTierList.items : structuredClone(defaultItems)
-);
+const activeTierList = computed(() => {
+  return tierLists.value.find((tierList) => {
+    return tierList.id === activeTierListId.value;
+  });
+});
+
+const tierListName = computed({
+  get() {
+    return activeTierList.value.name;
+  },
+  set(newName) {
+    activeTierList.value.name = newName;
+  },
+});
+
+const items = computed({
+  get() {
+    return activeTierList.value.items;
+  },
+  set(newItems) {
+    activeTierList.value.items = newItems;
+  },
+});
+
+const tiers = computed({
+  get() {
+    return activeTierList.value.tiers;
+  },
+  set(newTiers) {
+    activeTierList.value.tiers = newTiers;
+  },
+});
 
 const draggedItem = ref(null);
 const draggedFromTier = ref(null);
 const showResetModal = ref(false);
+const showSavedListsModal = ref(false);
+const showNewTierListModal = ref(false);
 
 const rankedItemCount = computed(() => {
   return tiers.value.reduce((total, tier) => {
@@ -72,10 +116,26 @@ const totalItemCount = computed(() => {
   return rankedItemCount.value + unrankedItemCount.value;
 });
 
+const savedLists = computed(() => {
+  return tierLists.value.map((tierList) => {
+    const rankedItems = tierList.tiers.reduce((total, tier) => {
+      return total + tier.items.length;
+    }, 0);
+
+    const totalItems = rankedItems + tierList.items.length;
+
+    return {
+      id: tierList.id,
+      name: tierList.name,
+      description: `${totalItems} Items gespeichert`,
+    };
+  });
+});
+
 watch(
-  [items, tiers],
+  [tierLists, activeTierListId],
   () => {
-    saveTierList(items.value, tiers.value);
+    saveTierLists(activeTierListId.value, tierLists.value);
   },
   { deep: true }
 );
@@ -167,9 +227,40 @@ function closeResetModal() {
   showResetModal.value = false;
 }
 
-function confirmReset() {
-  clearTierListStorage();
+function openSavedListsModal() {
+  showSavedListsModal.value = true;
+}
 
+function closeSavedListsModal() {
+  showSavedListsModal.value = false;
+}
+
+function openNewTierListModal() {
+  showNewTierListModal.value = true;
+}
+
+function closeNewTierListModal() {
+  showNewTierListModal.value = false;
+}
+
+function createNewTierList(newName) {
+  const newTierList = {
+    id: Date.now().toString(),
+    name: newName,
+    items: [],
+    tiers: structuredClone(defaultTiers),
+  };
+
+  tierLists.value.push(newTierList);
+  activeTierListId.value = newTierList.id;
+
+  draggedItem.value = null;
+  draggedFromTier.value = null;
+
+  showNewTierListModal.value = false;
+}
+
+function confirmReset() {
   items.value = structuredClone(defaultItems);
   tiers.value = structuredClone(defaultTiers);
 
@@ -177,6 +268,15 @@ function confirmReset() {
   draggedFromTier.value = null;
 
   showResetModal.value = false;
+}
+
+function openTierList(tierListId) {
+  activeTierListId.value = tierListId;
+
+  draggedItem.value = null;
+  draggedFromTier.value = null;
+
+  showSavedListsModal.value = false;
 }
 </script>
 
