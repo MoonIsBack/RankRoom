@@ -5,22 +5,11 @@
     <main class="app">
       <HeroSection :total-items="totalItemCount" />
 
-      <StatsGrid
-        :total-items="totalItemCount"
-        :ranked-items="rankedItemCount"
-        :unranked-items="unrankedItemCount"
-      />
+      <StatsGrid :total-items="totalItemCount" :ranked-items="rankedItemCount" :unranked-items="unrankedItemCount" />
 
       <section class="tierlist">
-        <TierRow
-          v-for="tier in tiers"
-          :key="tier.name"
-          :name="tier.name"
-          :color="tier.color"
-          :items="tier.items"
-          @drop-item="dropItem(tier.name)"
-          @drag-start="startDragFromTier($event, tier.name)"
-        />
+        <TierRow v-for="tier in tiers" :key="tier.name" :name="tier.name" :color="tier.color" :items="tier.items"
+          @drop-item="dropItem(tier.name)" @drag-start="startDragFromTier($event, tier.name)" />
       </section>
 
       <section class="control-panel">
@@ -28,24 +17,15 @@
         <button class="reset-button" @click="openResetModal">Zurücksetzen</button>
       </section>
 
-      <ItemPool
-        :items="items"
-        @delete-item="deleteItem"
-        @drag-start="startDrag"
-        @drop-to-pool="dropItemToPool"
-      />
+      <ItemPool :items="items" @delete-item="deleteItem" @drag-start="startDrag" @drop-to-pool="dropItemToPool" />
 
-      <ResetModal
-        v-if="showResetModal"
-        @cancel="closeResetModal"
-        @confirm="confirmReset"
-      />
+      <ResetModal v-if="showResetModal" @cancel="closeResetModal" @confirm="confirmReset" />
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 
 import AppHeader from "./components/AppHeader.vue";
 import HeroSection from "./components/HeroSection.vue";
@@ -58,8 +38,21 @@ import ItemPool from "./components/ItemPool.vue";
 import { defaultItems } from "./data/defaultItems";
 import { defaultTiers } from "./data/defaultTiers";
 
-const tiers = ref(structuredClone(defaultTiers));
-const items = ref(structuredClone(defaultItems));
+import {
+  saveTierList,
+  loadTierList,
+  clearTierListStorage,
+} from "./storage/tierListStorage";
+
+const savedTierList = loadTierList();
+
+const tiers = ref(
+  savedTierList ? savedTierList.tiers : structuredClone(defaultTiers)
+);
+
+const items = ref(
+  savedTierList ? savedTierList.items : structuredClone(defaultItems)
+);
 
 const draggedItem = ref(null);
 const draggedFromTier = ref(null);
@@ -78,6 +71,14 @@ const unrankedItemCount = computed(() => {
 const totalItemCount = computed(() => {
   return rankedItemCount.value + unrankedItemCount.value;
 });
+
+watch(
+  [items, tiers],
+  () => {
+    saveTierList(items.value, tiers.value);
+  },
+  { deep: true }
+);
 
 function addItem(itemName) {
   const trimmedName = itemName.trim();
@@ -167,6 +168,8 @@ function closeResetModal() {
 }
 
 function confirmReset() {
+  clearTierListStorage();
+
   items.value = structuredClone(defaultItems);
   tiers.value = structuredClone(defaultTiers);
 
@@ -181,16 +184,15 @@ function confirmReset() {
 .page {
   min-height: 100vh;
 
-  background: radial-gradient(
-      circle at top left,
+  background: radial-gradient(circle at top left,
       rgba(124, 58, 237, 0.2),
-      transparent 34%
-    ),
+      transparent 34%),
     radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.16), transparent 32%),
     #0b0b0f;
 
   color: white;
 }
+
 .app {
   min-height: 100vh;
   padding: 25px 40px 50px;
