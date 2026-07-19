@@ -21,17 +21,17 @@ defineProps({
 <template>
   <section class="stats-grid">
     <div class="stat-card">
-      <span class="stat-label">Total Items</span>
+      <span class="stat-label">Items gesamt</span>
       <strong>{{ totalItems }}</strong>
     </div>
 
     <div class="stat-card">
-      <span class="stat-label">Ranked</span>
+      <span class="stat-label">Eingestuft</span>
       <strong>{{ rankedItems }}</strong>
     </div>
 
     <div class="stat-card">
-      <span class="stat-label">Unranked</span>
+      <span class="stat-label">Nicht eingestuft</span>
       <strong>{{ unrankedItems }}</strong>
     </div>
   </section>
@@ -66,5 +66,21 @@ defineProps({
 .stat-card strong {
   font-size: 2rem;
   line-height: 1;
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Die erste Kachel ("Items gesamt") nimmt die volle Breite ein */
+  .stat-card:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .stat-card strong {
+    font-size: 1.6rem;
+  }
 }
 </style>

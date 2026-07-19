@@ -5,9 +5,9 @@
 // die kein Bild brauchen.
 import { ref } from 'vue'
 
-import { readImageFiles, ALLOWED_IMAGE_ACCEPT } from '../composables/useImageUpload'
+import { ALLOWED_IMAGE_ACCEPT } from '../composables/useImageUpload'
 
-const emit = defineEmits(['add-item', 'add-images', 'invalid-image-types'])
+const emit = defineEmits(['add-item', 'add-files'])
 
 // Merkt sich, was gerade im Eingabefeld steht (per v-model verbunden)
 const itemName = ref('')
@@ -36,26 +36,17 @@ function openFilePicker() {
   fileInputRef.value.click()
 }
 
-// Wird aufgerufen, sobald der Nutzer im Datei-Dialog Bilder ausgewählt hat
-async function handleFilesSelected(event) {
+// Wird aufgerufen, sobald der Nutzer im Datei-Dialog Bilder ausgewählt hat.
+// Die eigentliche Verarbeitung (Format-Check, Duplikate, Hinzufügen) macht
+// App.vue zentral — hier reichen wir nur die ausgewählten Dateien weiter.
+function handleFilesSelected(event) {
   const files = event.target.files
 
   if (!files || files.length === 0) {
     return
   }
 
-  const { items, rejectedFileNames } = await readImageFiles(files)
-
-  if (items.length > 0) {
-    emit('add-images', items)
-  }
-
-  // Eigentlich verhindert das accept-Attribut unten schon die Auswahl falscher
-  // Dateitypen im Dialog, aber manche Betriebssysteme erlauben trotzdem
-  // "Alle Dateien" auszuwählen — deshalb hier sicherheitshalber nochmal prüfen
-  if (rejectedFileNames.length > 0) {
-    emit('invalid-image-types', rejectedFileNames)
-  }
+  emit('add-files', files)
 
   // Auswahl zurücksetzen, damit man dieselbe(n) Datei(en) danach erneut auswählen kann
   event.target.value = ''

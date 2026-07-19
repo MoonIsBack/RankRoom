@@ -14,8 +14,8 @@
     <div
       class="tier-content"
       :class="{ 'is-drag-over': isDragOver }"
-      @dragenter="handleDragEnter"
-      @dragleave="handleDragLeave"
+      @dragenter="onDragEnter"
+      @dragleave="onDragLeave"
       @dragover.prevent
       @drop="handleDrop"
     >
@@ -44,9 +44,10 @@
 <script setup>
 // Eine einzelne Reihe der Tierlist (z. B. die "S"-Reihe) mit allen
 // Items, die dort bereits einsortiert wurden.
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import ItemCard from './ItemCard.vue'
+import { useDragOver } from '../composables/useDragOver'
 
 const props = defineProps({
   name: String,
@@ -64,29 +65,13 @@ const props = defineProps({
 // drag-start: eine Karte aus dieser Reihe wird gerade gezogen (weg von hier)
 const emit = defineEmits(['drop-item', 'drag-start'])
 
-// Hebt die Reihe optisch hervor, solange etwas darüber gezogen wird
-const isDragOver = ref(false)
-
-// dragenter/dragleave feuern für jedes Kind-Element einzeln, deshalb zählen
-// wir mit statt nur an/aus zu schalten (sonst flackert die Hervorhebung)
-let dragCounter = 0
-
-function handleDragEnter() {
-  dragCounter++
-  isDragOver.value = true
-}
-
-function handleDragLeave() {
-  dragCounter = Math.max(0, dragCounter - 1)
-
-  if (dragCounter === 0) {
-    isDragOver.value = false
-  }
-}
+// Hebt die Reihe optisch hervor, solange eine Item-Karte darüber gezogen wird.
+// ignoreFiles: true -> beim Reinziehen von Dateien aus dem Ordner bleibt die
+// Reihe unmarkiert (dann zeigt nur das große Seiten-Overlay an, dass man ablegen kann).
+const { isDragOver, onDragEnter, onDragLeave, reset } = useDragOver({ ignoreFiles: true })
 
 function handleDrop() {
-  dragCounter = 0
-  isDragOver.value = false
+  reset()
   emit('drop-item')
 }
 

@@ -37,11 +37,7 @@
       </section>
 
       <section class="control-panel">
-        <AddItemForm
-          @add-item="addItem"
-          @add-images="addItemsFromImages"
-          @invalid-image-types="showInvalidFileTypesError"
-        />
+        <AddItemForm @add-item="addItem" @add-files="handleImageFiles" />
         <button class="reset-button" @click="openResetModal">Zurücksetzen</button>
       </section>
 
@@ -66,16 +62,30 @@
         @close="closeNewTierListModal"
         @create="createNewTierList"
       />
-      <InvalidFileTypeModal
-        v-if="invalidFileNames.length > 0"
-        :file-names="invalidFileNames"
-        @close="closeInvalidFileTypeModal"
+      <FileNoticeModal
+        v-if="fileNoticeGroups.length > 0"
+        :groups="fileNoticeGroups"
+        @close="closeFileNotice"
       />
     </main>
 
     <!-- Overlay, das erscheint, während man ein Bild über die Seite zieht -->
     <div v-if="isDraggingFile" class="file-drop-overlay">
-      <div class="file-drop-message">🖼 Bilder hier ablegen, um sie hinzuzufügen</div>
+      <div class="file-drop-message">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="9" cy="9" r="2" />
+          <path d="M21 15l-5-5L5 21" />
+        </svg>
+        Bilder hier ablegen, um sie hinzuzufügen
+      </div>
     </div>
   </div>
 </template>
@@ -91,11 +101,11 @@ import HeroSection from './components/HeroSection.vue'
 import TierRow from './components/TierRow.vue'
 import StatsGrid from './components/StatsGrid.vue'
 import AddItemForm from './components/AddItemForm.vue'
-import ResetModal from './components/ResetModal.vue'
-import SavedListsModal from './components/SavedListsModal.vue'
-import NewTierListModal from './components/NewTierListModal.vue'
 import ItemPool from './components/ItemPool.vue'
-import InvalidFileTypeModal from './components/InvalidFileTypeModal.vue'
+import ResetModal from './components/modals/ResetModal.vue'
+import SavedListsModal from './components/modals/SavedListsModal.vue'
+import NewTierListModal from './components/modals/NewTierListModal.vue'
+import FileNoticeModal from './components/modals/FileNoticeModal.vue'
 
 import { useTierLists } from './composables/useTierLists'
 import { useDragAndDrop } from './composables/useDragAndDrop'
@@ -129,41 +139,52 @@ const {
 const { draggedItem, startDrag, startDragFromTier, dropItem, dropItemToPool, resetDrag } =
   useDragAndDrop(items, tiers)
 
-// Wird aufgerufen, wenn irgendwo auf der Seite Bilddateien abgelegt werden.
-// Anders als beim Datei-Dialog gibt es hier keine automatische Sperre für
-// falsche Dateitypen, deshalb prüfen wir hier selbst und zeigen bei Bedarf
-// das Fehler-Popup.
-async function handleDroppedFiles(fileList) {
-  const { items, rejectedFileNames } = await readImageFiles(fileList)
+// Zentrale Verarbeitung für Bilddateien — egal ob sie über den Datei-Dialog
+// ("Bilder auswählen") oder per Drag & Drop auf die Seite kommen.
+// Schritt 1: Dateien einlesen und falsche Formate aussortieren.
+// Schritt 2: gültige Bilder hinzufügen, dabei Duplikate herausfiltern.
+// Schritt 3: falls etwas übersprungen wurde, ein Hinweis-Popup zeigen.
+async function handleImageFiles(fileList) {
+  const { items: imageItems, rejectedFileNames } = await readImageFiles(fileList)
 
-  if (items.length > 0) {
-    addItemsFromImages(items)
-  }
+  const { duplicateNames } = addItemsFromImages(imageItems)
+
+  const groups = []
 
   if (rejectedFileNames.length > 0) {
-    showInvalidFileTypesError(rejectedFileNames)
+    groups.push({
+      heading: 'Es werden nur PNG- und JPG-Bilder unterstützt:',
+      files: rejectedFileNames,
+    })
+  }
+
+  if (duplicateNames.length > 0) {
+    groups.push({
+      heading: 'Diese Bilder sind bereits in der Liste vorhanden:',
+      files: duplicateNames,
+    })
+  }
+
+  if (groups.length > 0) {
+    fileNoticeGroups.value = groups
   }
 }
 
 // Erlaubt es, Bilder von überall auf der Seite reinzuziehen (siehe Vorlage oben)
 const { isDraggingFile, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
-  useFileDropZone(handleDroppedFiles)
+  useFileDropZone(handleImageFiles)
 
 // Steuert, welches Modal (Popup) gerade sichtbar ist
 const showResetModal = ref(false)
 const showSavedListsModal = ref(false)
 const showNewTierListModal = ref(false)
 
-// Namen der zuletzt abgelehnten Dateien (falsches Format). Ist die Liste leer,
-// wird das Fehler-Popup nicht angezeigt (siehe v-if oben im Template).
-const invalidFileNames = ref([])
+// Hinweis-Gruppen für das FileNoticeModal (übersprungene Bilder: falsches
+// Format und/oder doppelt). Ist die Liste leer, wird das Popup nicht angezeigt.
+const fileNoticeGroups = ref([])
 
-function showInvalidFileTypesError(fileNames) {
-  invalidFileNames.value = fileNames
-}
-
-function closeInvalidFileTypeModal() {
-  invalidFileNames.value = []
+function closeFileNotice() {
+  fileNoticeGroups.value = []
 }
 
 // --- Reset-Modal (Tierlist zurücksetzen) ---
@@ -332,7 +353,7 @@ function openTierList(tierListId) {
 }
 
 .file-drop-message {
-  padding: 24px 36px;
+  padding: 28px 40px;
 
   border: 2px dashed rgba(255, 255, 255, 0.5);
   border-radius: 24px;
@@ -342,5 +363,16 @@ function openTierList(tierListId) {
 
   font-size: 1.2rem;
   font-weight: 800;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.file-drop-message svg {
+  width: 40px;
+  height: 40px;
+  color: #a78bfa;
 }
 </style>

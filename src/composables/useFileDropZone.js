@@ -1,17 +1,16 @@
 // Composable, um irgendwo auf der Seite Dateien per Drag & Drop entgegenzunehmen
 // (z. B. Bilder, die man aus dem Finder/Explorer auf die App zieht).
 // onFilesDropped wird mit den abgelegten Dateien aufgerufen.
-import { ref } from 'vue'
+//
+// Die "wird gerade etwas hierüber gezogen?"-Zählerei kommt aus useDragOver,
+// hier kümmern wir uns nur zusätzlich darum, echte Datei-Drags von außerhalb
+// von normalem Item-Ziehen innerhalb der App zu unterscheiden.
+import { useDragOver } from './useDragOver'
 
 export function useFileDropZone(onFilesDropped) {
-  // true, während der Nutzer gerade eine Datei über die Seite zieht
+  // isDraggingFile ist true, während eine Datei über die Seite gezogen wird
   // (steuert die "Bilder hier ablegen"-Anzeige)
-  const isDraggingFile = ref(false)
-
-  // dragenter/dragleave feuern für JEDES Element einzeln, über das man
-  // beim Ziehen fährt. Mit einem Zähler statt nur an/aus vermeiden wir,
-  // dass die Anzeige beim Überqueren von Kind-Elementen kurz flackert.
-  let dragCounter = 0
+  const { isDragOver: isDraggingFile, onDragEnter, onDragLeave, reset } = useDragOver()
 
   // Nur auf echte Datei-Drags von außerhalb reagieren (z. B. aus dem Finder),
   // NICHT auf das interne Ziehen von Item-Karten zwischen Pool und Tier-Reihen
@@ -24,8 +23,7 @@ export function useFileDropZone(onFilesDropped) {
       return
     }
 
-    dragCounter++
-    isDraggingFile.value = true
+    onDragEnter()
   }
 
   function handleDragLeave(event) {
@@ -33,11 +31,7 @@ export function useFileDropZone(onFilesDropped) {
       return
     }
 
-    dragCounter = Math.max(0, dragCounter - 1)
-
-    if (dragCounter === 0) {
-      isDraggingFile.value = false
-    }
+    onDragLeave()
   }
 
   function handleDragOver(event) {
@@ -56,8 +50,7 @@ export function useFileDropZone(onFilesDropped) {
 
     event.preventDefault()
 
-    dragCounter = 0
-    isDraggingFile.value = false
+    reset()
 
     onFilesDropped(event.dataTransfer.files)
   }

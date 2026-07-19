@@ -4,7 +4,6 @@
 // von Listen und Items.
 import { computed, ref, watch } from 'vue'
 
-import { defaultItems } from '../data/defaultItems'
 import { defaultTiers } from '../data/defaultTiers'
 import { loadTierLists, saveTierLists } from '../storage/tierListStorage'
 
@@ -13,11 +12,12 @@ export function useTierLists() {
   // Ist noch nichts gespeichert (erster Besuch), ist savedData null.
   const savedData = loadTierLists()
 
-  // Die Standard-Tierlist, die genutzt wird, wenn noch nichts gespeichert wurde
+  // Die Standard-Tierlist, die genutzt wird, wenn noch nichts gespeichert wurde.
+  // Startet leer, damit man direkt seine eigenen Items hinzufügen kann.
   const defaultTierList = {
     id: 'default',
     name: 'RankRoom Default',
-    items: structuredClone(defaultItems),
+    items: [],
     tiers: structuredClone(defaultTiers),
   }
 
@@ -132,14 +132,52 @@ export function useTierLists() {
   // newImageItems ist eine Liste aus { name, image } (kommt z. B. aus
   // useImageUpload.js, wenn mehrere Bilddateien per Drag & Drop oder
   // Dateiauswahl ausgewählt wurden).
+  //
+  // Bilder, die schon in der aktiven Tierlist vorhanden sind (im Pool ODER in
+  // einer Tier-Reihe) oder die im selben Vorgang doppelt dabei sind, werden
+  // NICHT hinzugefügt. Ihre Dateinamen werden als "duplicateNames" zurückgegeben,
+  // damit App.vue darauf ein Hinweis-Popup zeigen kann.
   function addItemsFromImages(newImageItems) {
-    const newItems = newImageItems.map((entry) => ({
-      id: crypto.randomUUID(),
-      name: entry.name,
-      image: entry.image,
-    }))
+    // Alle bereits vorhandenen Bild-Daten einsammeln (Pool + alle Tier-Reihen).
+    // Wir vergleichen die Bild-Daten selbst, nicht den Namen — so gilt dasselbe
+    // Bild auch dann als Duplikat, wenn die Datei anders heißt.
+    const existingImages = new Set()
 
-    items.value.push(...newItems)
+    items.value.forEach((item) => {
+      if (item.image) {
+        existingImages.add(item.image)
+      }
+    })
+
+    tiers.value.forEach((tier) => {
+      tier.items.forEach((item) => {
+        if (item.image) {
+          existingImages.add(item.image)
+        }
+      })
+    })
+
+    const itemsToAdd = []
+    const duplicateNames = []
+    const seenInThisBatch = new Set()
+
+    newImageItems.forEach((entry) => {
+      if (existingImages.has(entry.image) || seenInThisBatch.has(entry.image)) {
+        duplicateNames.push(entry.name)
+        return
+      }
+
+      seenInThisBatch.add(entry.image)
+      itemsToAdd.push({
+        id: crypto.randomUUID(),
+        name: entry.name,
+        image: entry.image,
+      })
+    })
+
+    items.value.push(...itemsToAdd)
+
+    return { addedCount: itemsToAdd.length, duplicateNames }
   }
 
   // Item komplett aus dem Pool entfernen (× -Button im ItemPool)
@@ -179,9 +217,10 @@ export function useTierLists() {
     activeTierListId.value = newTierList.id
   }
 
-  // Setzt die aktive Tierlist auf die Ausgangs-Items/-Tiers zurück
+  // Leert die aktive Tierlist komplett: keine Items mehr im Pool und
+  // alle Tier-Reihen (S, A, B, C, D) wieder leer.
   function confirmReset() {
-    items.value = structuredClone(defaultItems)
+    items.value = []
     tiers.value = structuredClone(defaultTiers)
   }
 
@@ -195,7 +234,7 @@ export function useTierLists() {
       const freshTierList = {
         id: Date.now().toString(),
         name: 'RankRoom Default',
-        items: structuredClone(defaultItems),
+        items: [],
         tiers: structuredClone(defaultTiers),
       }
 

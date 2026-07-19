@@ -1,8 +1,7 @@
 <script setup>
 // Der Pool unten mit allen Items, die noch keiner Tier-Reihe zugeordnet sind.
-import { ref } from 'vue'
-
 import ItemCard from './ItemCard.vue'
+import { useDragOver } from '../composables/useDragOver'
 
 defineProps({
   items: {
@@ -13,27 +12,13 @@ defineProps({
 
 const emit = defineEmits(['delete-item', 'drag-start', 'drop-to-pool', 'rename-item'])
 
-// Hebt den Pool optisch hervor, solange etwas darüber gezogen wird
-// (egal ob eine Item-Karte oder eine Bilddatei von außerhalb)
-const isDragOver = ref(false)
-let dragCounter = 0
-
-function handleDragEnter() {
-  dragCounter++
-  isDragOver.value = true
-}
-
-function handleDragLeave() {
-  dragCounter = Math.max(0, dragCounter - 1)
-
-  if (dragCounter === 0) {
-    isDragOver.value = false
-  }
-}
+// Hebt den Pool optisch hervor, solange eine Item-Karte darüber gezogen wird.
+// ignoreFiles: true -> beim Reinziehen von Dateien aus dem Ordner bleibt der
+// Pool unmarkiert (dann zeigt nur das große Seiten-Overlay an, dass man ablegen kann).
+const { isDragOver, onDragEnter, onDragLeave, reset } = useDragOver({ ignoreFiles: true })
 
 function handleDrop() {
-  dragCounter = 0
-  isDragOver.value = false
+  reset()
   emit('drop-to-pool')
 }
 </script>
@@ -43,8 +28,8 @@ function handleDrop() {
   <section
     class="item-pool"
     :class="{ 'is-drag-over': isDragOver }"
-    @dragenter="handleDragEnter"
-    @dragleave="handleDragLeave"
+    @dragenter="onDragEnter"
+    @dragleave="onDragLeave"
     @dragover.prevent
     @drop="handleDrop"
   >
@@ -57,6 +42,11 @@ function handleDrop() {
       @drag-start="$emit('drag-start', item)"
       @rename="$emit('rename-item', item.id, $event)"
     />
+
+    <!-- Hinweis, solange der Pool leer ist -->
+    <p v-if="items.length === 0" class="empty-hint">
+      Noch keine Items im Pool — füge welche hinzu oder ziehe Bilder hierher.
+    </p>
   </section>
 </template>
 
@@ -81,5 +71,17 @@ function handleDrop() {
 .item-pool.is-drag-over {
   background: rgba(127, 156, 255, 0.08);
   border-color: rgba(127, 156, 255, 0.5);
+}
+
+.empty-hint {
+  margin: auto;
+
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+
+  /* Der Hinweis soll das Ablegen von Karten/Bildern nicht abfangen */
+  pointer-events: none;
 }
 </style>

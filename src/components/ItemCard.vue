@@ -138,6 +138,21 @@ function cancelEditing() {
     transform 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+
+  /* Kurzes Einblenden, wenn eine Karte neu erscheint (z. B. nach dem Ablegen
+     in einer Tier-Reihe oder beim Hinzufügen) */
+  animation: card-place-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes card-place-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .item-card:hover {
@@ -156,6 +171,9 @@ function cancelEditing() {
   box-shadow: none;
   cursor: default;
   pointer-events: none;
+
+  /* Die Vorschau-Karte soll nicht mit einblenden */
+  animation: none;
 }
 
 .item-card.is-ghost:hover {
