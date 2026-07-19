@@ -1,4 +1,7 @@
 <script setup>
+// Zeigt drei kleine Statistik-Kacheln: Gesamtanzahl, eingestufte und
+// noch nicht eingestufte Items. Die Zahlen werden von App.vue berechnet
+// und hier nur angezeigt.
 defineProps({
   totalItems: {
     type: Number,

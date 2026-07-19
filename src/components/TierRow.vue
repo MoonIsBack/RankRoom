@@ -1,9 +1,15 @@
 <template>
   <div class="tier-row">
+    <!-- Das farbige Label links, z. B. "S", "A", "B" -->
     <div class="tier-label" :style="{ backgroundColor: color }">
       {{ name }}
     </div>
 
+    <!--
+      @dragover.prevent ist nötig, damit der Browser hier überhaupt ein
+      "drop" erlaubt (sonst wird der Drop automatisch abgelehnt).
+      @drop feuert, wenn eine Karte hier abgelegt wird.
+    -->
     <div
       class="tier-content"
       @dragover.prevent
@@ -21,6 +27,8 @@
 </template>
 
 <script setup>
+// Eine einzelne Reihe der Tierlist (z. B. die "S"-Reihe) mit allen
+// Items, die dort bereits einsortiert wurden.
 import ItemCard from './ItemCard.vue'
 
 defineProps({
@@ -29,6 +37,8 @@ defineProps({
   items: Array,
 })
 
+// drop-item: eine Karte wurde in diese Reihe gezogen
+// drag-start: eine Karte aus dieser Reihe wird gerade gezogen (weg von hier)
 defineEmits(['drop-item', 'drag-start'])
 </script>
 

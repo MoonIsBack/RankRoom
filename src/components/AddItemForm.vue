@@ -1,24 +1,31 @@
 <script setup>
+// Formular, um ein neues Item zum Item-Pool hinzuzufügen.
 import { ref } from "vue";
 
 const emit = defineEmits(["add-item"]);
 
+// Merkt sich, was gerade im Eingabefeld steht (per v-model verbunden)
 const itemName = ref("");
 
 function submitItem() {
+    // trim() entfernt Leerzeichen am Anfang/Ende, z. B. aus "  Test  " wird "Test"
     const trimmedName = itemName.value.trim();
 
+    // Leere Eingabe (nur Leerzeichen oder gar nichts) wird ignoriert
     if (!trimmedName) {
         return;
     }
 
+    // Neuen Namen an App.vue melden, dort wird das Item wirklich erstellt
     emit("add-item", trimmedName);
+    // Eingabefeld danach wieder leeren
     itemName.value = "";
 }
 </script>
 
 <template>
     <div class="add-item-form">
+        <!-- Enter-Taste im Feld löst genauso wie der Button das Hinzufügen aus -->
         <input v-model="itemName" type="text" placeholder="Neues Item eingeben..." @keyup.enter="submitItem" />
 
         <button @click="submitItem">Hinzufügen</button>

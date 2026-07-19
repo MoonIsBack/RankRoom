@@ -26,8 +26,10 @@
     </div>
   </header>
 
+  <!-- Abgedunkelter Hintergrund hinter dem Seitenmenü, Klick darauf schließt das Menü -->
   <div v-if="isMenuOpen" class="menu-overlay" @click="closeMenu"></div>
 
+  <!-- "open"-Klasse schiebt das Menü per CSS-Transition von rechts ins Bild -->
   <aside :class="['side-menu', { open: isMenuOpen }]">
     <div class="side-menu-header">
       <div>
@@ -69,10 +71,13 @@
 </template>
 
 <script setup>
+// Die Kopfzeile der App: Logo, Navigation, "Neue Tierlist"-Button und
+// das ausklappbare Seitenmenü (Hamburger-Menü) rechts.
 import { ref } from "vue";
 
 const emit = defineEmits(["go-home", "open-saved-lists", "new-tier-list"]);
 
+// Steuert, ob das Seitenmenü (rechts eingeblendet) gerade offen ist
 const isMenuOpen = ref(false);
 
 function openMenu() {
@@ -84,6 +89,8 @@ function closeMenu() {
 }
 
 function openSavedLists() {
+  // Menü zuerst schließen, dann App.vue Bescheid geben, dass das
+  // "Gespeicherte Tierlists"-Modal geöffnet werden soll
   closeMenu();
   emit("open-saved-lists");
 }

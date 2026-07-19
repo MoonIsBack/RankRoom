@@ -1,5 +1,7 @@
 <template>
+  <!-- draggable="true" macht die Karte per Maus ziehbar (Drag & Drop) -->
   <div class="item-card" draggable="true" @dragstart="$emit('drag-start')">
+    <!-- Der Löschen-Button (×) wird nur im Item-Pool angezeigt, nicht in den Tier-Reihen -->
     <button v-if="showDelete" class="delete-button" @click="$emit('delete')">×</button>
 
     <span>{{ name }}</span>
@@ -7,8 +9,12 @@
 </template>
 
 <script setup>
+// Eine einzelne Item-Karte (z. B. "Waves"), die sowohl im Item-Pool
+// als auch in den Tier-Reihen (S, A, B, ...) verwendet wird.
 defineProps({
   name: String,
+  // showDelete steuert, ob der ×-Button angezeigt wird.
+  // Im Pool: true (löschbar), in Tier-Reihen: false (nur verschiebbar)
   showDelete: {
     type: Boolean,
     default: true,

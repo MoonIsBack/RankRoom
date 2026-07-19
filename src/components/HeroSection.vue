@@ -23,6 +23,8 @@
 </template>
 
 <script setup>
+// totalItems kommt von der übergeordneten App.vue und zeigt an, wie viele
+// Items die aktuelle Tierlist insgesamt hat (eingestuft + noch nicht eingestuft)
 defineProps({
   totalItems: {
     type: Number,

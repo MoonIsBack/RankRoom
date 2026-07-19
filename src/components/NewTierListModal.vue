@@ -39,19 +39,23 @@
 </template>
 
 <script setup>
+// Modal (Popup-Fenster), um eine neue, leere Tierlist mit eigenem Namen zu erstellen.
 import { ref } from "vue";
 
 const emit = defineEmits(["close", "create"]);
 
+// Der Name, den der Nutzer im Eingabefeld tippt
 const tierListName = ref("");
 
 function createTierList() {
   const trimmedName = tierListName.value.trim();
 
+  // Ohne Namen wird keine Tierlist erstellt
   if (!trimmedName) {
     return;
   }
 
+  // App.vue erstellt die eigentliche neue Tierlist mit diesem Namen
   emit("create", trimmedName);
 }
 </script>

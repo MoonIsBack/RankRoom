@@ -1,4 +1,5 @@
 <script setup>
+// Der Pool unten mit allen Items, die noch keiner Tier-Reihe zugeordnet sind.
 import ItemCard from "./ItemCard.vue";
 
 defineProps({
@@ -12,6 +13,7 @@ defineEmits(["delete-item", "drag-start", "drop-to-pool"]);
 </script>
 
 <template>
+  <!-- Wird eine Karte aus einer Tier-Reihe hierher zurückgezogen, landet sie wieder im Pool -->
   <section class="item-pool" @dragover.prevent @drop="$emit('drop-to-pool')">
     <ItemCard
       v-for="item in items"

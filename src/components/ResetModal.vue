@@ -1,4 +1,6 @@
 <script setup>
+// Sicherheitsabfrage, die erscheint, bevor die aktuelle Tierlist zurückgesetzt wird.
+// "cancel" = Abbrechen-Button, "confirm" = wirklich zurücksetzen
 defineEmits(["cancel", "confirm"]);
 </script>
 
