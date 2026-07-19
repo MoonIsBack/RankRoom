@@ -9,8 +9,8 @@
       </h1>
 
       <p>
-        Sortiere Plugins, Games, Songs oder alles, was du ranken möchtest —
-        modern, schnell und übersichtlich.
+        Sortiere Plugins, Games, Songs oder alles, was du ranken möchtest — modern, schnell und
+        übersichtlich.
       </p>
     </div>
 
@@ -35,7 +35,7 @@ defineProps({
     type: Number,
     required: true,
   },
-});
+})
 </script>
 
 <style scoped>

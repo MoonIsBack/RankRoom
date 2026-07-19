@@ -7,9 +7,9 @@ defineProps({
     type: Array,
     required: true,
   },
-});
+})
 
-defineEmits(["close"]);
+defineEmits(['close'])
 </script>
 
 <template>
@@ -17,16 +17,17 @@ defineEmits(["close"]);
     <div class="modal" @click.stop>
       <h2>Falsches Dateiformat</h2>
 
-      <p>Es werden nur PNG- und JPG-Bilder unterstützt. Diese Datei(en) wurden deshalb nicht hinzugefügt:</p>
+      <p>
+        Es werden nur PNG- und JPG-Bilder unterstützt. Diese Datei(en) wurden deshalb nicht
+        hinzugefügt:
+      </p>
 
       <ul class="file-list">
         <li v-for="fileName in fileNames" :key="fileName">{{ fileName }}</li>
       </ul>
 
       <div class="modal-actions">
-        <button class="confirm-button" @click="$emit('close')">
-          Verstanden
-        </button>
+        <button class="confirm-button" @click="$emit('close')">Verstanden</button>
       </div>
     </div>
   </div>

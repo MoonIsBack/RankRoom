@@ -1,7 +1,7 @@
 <script setup>
 // Sicherheitsabfrage, die erscheint, bevor die aktuelle Tierlist zurückgesetzt wird.
 // "cancel" = Abbrechen-Button, "confirm" = wirklich zurücksetzen
-defineEmits(["cancel", "confirm"]);
+defineEmits(['cancel', 'confirm'])
 </script>
 
 <template>
@@ -12,13 +12,9 @@ defineEmits(["cancel", "confirm"]);
       <p>Bist du sicher, dass du deine Tierlist zurücksetzen willst?</p>
 
       <div class="modal-actions">
-        <button class="cancel-button" @click="$emit('cancel')">
-          Abbrechen
-        </button>
+        <button class="cancel-button" @click="$emit('cancel')">Abbrechen</button>
 
-        <button class="confirm-button" @click="$emit('confirm')">
-          Zurücksetzen
-        </button>
+        <button class="confirm-button" @click="$emit('confirm')">Zurücksetzen</button>
       </div>
     </div>
   </div>

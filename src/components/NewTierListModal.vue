@@ -7,14 +7,10 @@
           <h2>Neue Tierlist</h2>
         </div>
 
-        <button type="button" class="close-button" @click="$emit('close')">
-          ✕
-        </button>
+        <button type="button" class="close-button" @click="$emit('close')">✕</button>
       </div>
 
-      <label class="input-label" for="tierlist-name">
-        Name der Tierlist
-      </label>
+      <label class="input-label" for="tierlist-name"> Name der Tierlist </label>
 
       <input
         id="tierlist-name"
@@ -26,13 +22,9 @@
       />
 
       <div class="modal-actions">
-        <button type="button" class="cancel-button" @click="$emit('close')">
-          Abbrechen
-        </button>
+        <button type="button" class="cancel-button" @click="$emit('close')">Abbrechen</button>
 
-        <button type="submit" class="create-button">
-          Erstellen
-        </button>
+        <button type="submit" class="create-button">Erstellen</button>
       </div>
     </form>
   </div>
@@ -40,23 +32,23 @@
 
 <script setup>
 // Modal (Popup-Fenster), um eine neue, leere Tierlist mit eigenem Namen zu erstellen.
-import { ref } from "vue";
+import { ref } from 'vue'
 
-const emit = defineEmits(["close", "create"]);
+const emit = defineEmits(['close', 'create'])
 
 // Der Name, den der Nutzer im Eingabefeld tippt
-const tierListName = ref("");
+const tierListName = ref('')
 
 function createTierList() {
-  const trimmedName = tierListName.value.trim();
+  const trimmedName = tierListName.value.trim()
 
   // Ohne Namen wird keine Tierlist erstellt
   if (!trimmedName) {
-    return;
+    return
   }
 
   // App.vue erstellt die eigentliche neue Tierlist mit diesem Namen
-  emit("create", trimmedName);
+  emit('create', trimmedName)
 }
 </script>
 
@@ -85,8 +77,7 @@ function createTierList() {
   border-radius: 28px;
 
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)),
-    #101016;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)), #101016;
 
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
   color: white;

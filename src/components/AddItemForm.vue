@@ -3,88 +3,96 @@
 // Hauptweg: Bild(er) über den Datei-Dialog auswählen (Name kommt automatisch
 // vom Dateinamen). Textfeld darunter ist die kleine Alternative für Items,
 // die kein Bild brauchen.
-import { ref } from "vue";
+import { ref } from 'vue'
 
-import { readImageFiles, ALLOWED_IMAGE_ACCEPT } from "../composables/useImageUpload";
+import { readImageFiles, ALLOWED_IMAGE_ACCEPT } from '../composables/useImageUpload'
 
-const emit = defineEmits(["add-item", "add-images", "invalid-image-types"]);
+const emit = defineEmits(['add-item', 'add-images', 'invalid-image-types'])
 
 // Merkt sich, was gerade im Eingabefeld steht (per v-model verbunden)
-const itemName = ref("");
+const itemName = ref('')
 
 // Referenz auf das versteckte <input type="file">, damit wir es per
 // Button-Klick "programmatisch" öffnen können
-const fileInputRef = ref(null);
+const fileInputRef = ref(null)
 
 function submitItem() {
-    // trim() entfernt Leerzeichen am Anfang/Ende, z. B. aus "  Test  " wird "Test"
-    const trimmedName = itemName.value.trim();
+  // trim() entfernt Leerzeichen am Anfang/Ende, z. B. aus "  Test  " wird "Test"
+  const trimmedName = itemName.value.trim()
 
-    // Leere Eingabe (nur Leerzeichen oder gar nichts) wird ignoriert
-    if (!trimmedName) {
-        return;
-    }
+  // Leere Eingabe (nur Leerzeichen oder gar nichts) wird ignoriert
+  if (!trimmedName) {
+    return
+  }
 
-    // Neuen Namen an App.vue melden, dort wird das Item wirklich erstellt
-    emit("add-item", trimmedName);
-    // Eingabefeld danach wieder leeren
-    itemName.value = "";
+  // Neuen Namen an App.vue melden, dort wird das Item wirklich erstellt
+  emit('add-item', trimmedName)
+  // Eingabefeld danach wieder leeren
+  itemName.value = ''
 }
 
 // Öffnet den normalen Datei-Auswahl-Dialog des Betriebssystems
 function openFilePicker() {
-    fileInputRef.value.click();
+  fileInputRef.value.click()
 }
 
 // Wird aufgerufen, sobald der Nutzer im Datei-Dialog Bilder ausgewählt hat
 async function handleFilesSelected(event) {
-    const files = event.target.files;
+  const files = event.target.files
 
-    if (!files || files.length === 0) {
-        return;
-    }
+  if (!files || files.length === 0) {
+    return
+  }
 
-    const { items, rejectedFileNames } = await readImageFiles(files);
+  const { items, rejectedFileNames } = await readImageFiles(files)
 
-    if (items.length > 0) {
-        emit("add-images", items);
-    }
+  if (items.length > 0) {
+    emit('add-images', items)
+  }
 
-    // Eigentlich verhindert das accept-Attribut unten schon die Auswahl falscher
-    // Dateitypen im Dialog, aber manche Betriebssysteme erlauben trotzdem
-    // "Alle Dateien" auszuwählen — deshalb hier sicherheitshalber nochmal prüfen
-    if (rejectedFileNames.length > 0) {
-        emit("invalid-image-types", rejectedFileNames);
-    }
+  // Eigentlich verhindert das accept-Attribut unten schon die Auswahl falscher
+  // Dateitypen im Dialog, aber manche Betriebssysteme erlauben trotzdem
+  // "Alle Dateien" auszuwählen — deshalb hier sicherheitshalber nochmal prüfen
+  if (rejectedFileNames.length > 0) {
+    emit('invalid-image-types', rejectedFileNames)
+  }
 
-    // Auswahl zurücksetzen, damit man dieselbe(n) Datei(en) danach erneut auswählen kann
-    event.target.value = "";
+  // Auswahl zurücksetzen, damit man dieselbe(n) Datei(en) danach erneut auswählen kann
+  event.target.value = ''
 }
 </script>
 
 <template>
-    <div class="add-item-form">
-        <!-- Hauptweg: Bilder auswählen, Name kommt automatisch vom Dateinamen -->
-        <button type="button" class="image-picker-button" @click="openFilePicker">
-            Bilder auswählen
-        </button>
+  <div class="add-item-form">
+    <!-- Hauptweg: Bilder auswählen, Name kommt automatisch vom Dateinamen -->
+    <button type="button" class="image-picker-button" @click="openFilePicker">
+      Bilder auswählen
+    </button>
 
-        <!-- Unsichtbares Datei-Feld, das den echten Betriebssystem-Dialog öffnet.
+    <!-- Unsichtbares Datei-Feld, das den echten Betriebssystem-Dialog öffnet.
              multiple erlaubt die Auswahl mehrerer Bilder auf einmal.
              accept sorgt dafür, dass im Dialog selbst nur PNG/JPG auswählbar
              sind (andere Dateien werden vom Betriebssystem ausgegraut). -->
-        <input ref="fileInputRef" type="file" :accept="ALLOWED_IMAGE_ACCEPT" multiple class="hidden-file-input"
-            @change="handleFilesSelected" />
+    <input
+      ref="fileInputRef"
+      type="file"
+      :accept="ALLOWED_IMAGE_ACCEPT"
+      multiple
+      class="hidden-file-input"
+      @change="handleFilesSelected"
+    />
 
-        <!-- Kleine Alternative: Item ganz ohne Bild anlegen -->
-        <span class="or-label">oder</span>
+    <!-- Kleine Alternative: Item ganz ohne Bild anlegen -->
+    <span class="or-label">oder</span>
 
-        <div class="text-add-row">
-            <input v-model="itemName" type="text" placeholder="Name eingeben" @keyup.enter="submitItem" />
+    <div class="text-add-row">
+      <input v-model="itemName" type="text" placeholder="Name eingeben" @keyup.enter="submitItem" />
 
-            <button type="button" class="add-button" title="Item hinzufügen" @click="submitItem">+</button>
-        </div>
+      <button type="button" class="add-button" title="Item hinzufügen" @click="submitItem">
+        +
+      </button>
     </div>
+  </div>
 </template>
 
 <style scoped>
@@ -142,7 +150,7 @@ async function handleFilesSelected(event) {
   min-width: 160px;
 }
 
-.text-add-row input[type="text"] {
+.text-add-row input[type='text'] {
   flex: 1;
   min-width: 0;
   height: 44px;
@@ -156,14 +164,16 @@ async function handleFilesSelected(event) {
   font-size: 0.85rem;
   outline: none;
 
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
-.text-add-row input[type="text"]::placeholder {
+.text-add-row input[type='text']::placeholder {
   color: #6b7280;
 }
 
-.text-add-row input[type="text"]:focus {
+.text-add-row input[type='text']:focus {
   border-color: rgba(127, 156, 255, 0.4);
   background: rgba(255, 255, 255, 0.05);
 }
@@ -184,7 +194,9 @@ async function handleFilesSelected(event) {
   line-height: 1;
   cursor: pointer;
 
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
 }
 
 .add-button:hover {

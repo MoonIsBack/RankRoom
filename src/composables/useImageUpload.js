@@ -7,33 +7,33 @@
 // der Nachteil: Bilder brauchen im localStorage deutlich mehr Platz als reiner Text.
 
 // Nur diese Bildformate werden akzeptiert
-export const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg"];
+export const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg']
 
 // Für das <input accept="..."> im Datei-Dialog: MIME-Typen UND Dateiendungen,
 // weil manche Betriebssysteme nur nach der Endung filtern
-export const ALLOWED_IMAGE_ACCEPT = "image/png,image/jpeg,.png,.jpg,.jpeg";
+export const ALLOWED_IMAGE_ACCEPT = 'image/png,image/jpeg,.png,.jpg,.jpeg'
 
 // Liest eine einzelne Datei ein und wandelt sie in eine Data-URL um
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    const reader = new FileReader()
 
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
 
-    reader.readAsDataURL(file);
-  });
+    reader.readAsDataURL(file)
+  })
 }
 
 // Entfernt die Dateiendung aus einem Dateinamen, z. B. "Waves.png" -> "Waves"
 function fileNameWithoutExtension(fileName) {
-  const dotIndex = fileName.lastIndexOf(".");
+  const dotIndex = fileName.lastIndexOf('.')
 
   if (dotIndex <= 0) {
-    return fileName;
+    return fileName
   }
 
-  return fileName.slice(0, dotIndex);
+  return fileName.slice(0, dotIndex)
 }
 
 // Nimmt eine Liste von Dateien (aus einer Dateiauswahl oder einem Drop-Event)
@@ -41,19 +41,19 @@ function fileNameWithoutExtension(fileName) {
 // - items: gültige PNG/JPG-Bilder, bereit zum Hinzufügen als neue Items
 // - rejectedFileNames: Namen aller Dateien, die NICHT PNG/JPG waren
 export async function readImageFiles(fileList) {
-  const allFiles = Array.from(fileList);
+  const allFiles = Array.from(fileList)
 
-  const validFiles = allFiles.filter((file) => ALLOWED_IMAGE_TYPES.includes(file.type));
+  const validFiles = allFiles.filter((file) => ALLOWED_IMAGE_TYPES.includes(file.type))
   const rejectedFileNames = allFiles
     .filter((file) => !ALLOWED_IMAGE_TYPES.includes(file.type))
-    .map((file) => file.name);
+    .map((file) => file.name)
 
   const items = await Promise.all(
     validFiles.map(async (file) => ({
       name: fileNameWithoutExtension(file.name),
       image: await readFileAsDataUrl(file),
-    }))
-  );
+    })),
+  )
 
-  return { items, rejectedFileNames };
+  return { items, rejectedFileNames }
 }

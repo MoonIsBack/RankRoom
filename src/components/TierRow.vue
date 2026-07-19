@@ -8,12 +8,16 @@
     <!--
       @dragover.prevent ist nötig, damit der Browser hier überhaupt ein
       "drop" erlaubt (sonst wird der Drop automatisch abgelehnt).
-      @drop feuert, wenn eine Karte hier abgelegt wird.
+      @dragenter/@dragleave steuern die Hervorhebung, während man etwas
+      darüber hält, @drop feuert, wenn eine Karte hier abgelegt wird.
     -->
     <div
       class="tier-content"
+      :class="{ 'is-drag-over': isDragOver }"
+      @dragenter="handleDragEnter"
+      @dragleave="handleDragLeave"
       @dragover.prevent
-      @drop="$emit('drop-item')"
+      @drop="handleDrop"
     >
       <ItemCard
         v-for="item in items"
@@ -23,6 +27,16 @@
         :show-delete="false"
         @drag-start="$emit('drag-start', item)"
       />
+
+      <!-- Abgedunkelte Vorschau: zeigt genau, wo das gezogene Item landen
+           würde, solange man es über dieser Reihe hält -->
+      <ItemCard
+        v-if="showGhost"
+        :name="draggedItem.name"
+        :image="draggedItem.image"
+        :show-delete="false"
+        ghost
+      />
     </div>
   </div>
 </template>
@@ -30,47 +44,116 @@
 <script setup>
 // Eine einzelne Reihe der Tierlist (z. B. die "S"-Reihe) mit allen
 // Items, die dort bereits einsortiert wurden.
+import { computed, ref } from 'vue'
+
 import ItemCard from './ItemCard.vue'
 
-defineProps({
+const props = defineProps({
   name: String,
   color: String,
   items: Array,
+  // Das Item, das gerade irgendwo auf der Seite gezogen wird (oder null,
+  // wenn gerade nichts gezogen wird) — kommt von App.vue
+  draggedItem: {
+    type: Object,
+    default: null,
+  },
 })
 
 // drop-item: eine Karte wurde in diese Reihe gezogen
 // drag-start: eine Karte aus dieser Reihe wird gerade gezogen (weg von hier)
-defineEmits(['drop-item', 'drag-start'])
+const emit = defineEmits(['drop-item', 'drag-start'])
+
+// Hebt die Reihe optisch hervor, solange etwas darüber gezogen wird
+const isDragOver = ref(false)
+
+// dragenter/dragleave feuern für jedes Kind-Element einzeln, deshalb zählen
+// wir mit statt nur an/aus zu schalten (sonst flackert die Hervorhebung)
+let dragCounter = 0
+
+function handleDragEnter() {
+  dragCounter++
+  isDragOver.value = true
+}
+
+function handleDragLeave() {
+  dragCounter = Math.max(0, dragCounter - 1)
+
+  if (dragCounter === 0) {
+    isDragOver.value = false
+  }
+}
+
+function handleDrop() {
+  dragCounter = 0
+  isDragOver.value = false
+  emit('drop-item')
+}
+
+// Vorschau nur zeigen, wenn wirklich etwas über dieser Reihe hängt UND das
+// Item nicht schon hier drin ist (sonst gäbe es beim Drüberziehen über die
+// eigene Reihe eine verwirrende doppelte Karte)
+const showGhost = computed(() => {
+  if (!isDragOver.value || !props.draggedItem) {
+    return false
+  }
+
+  return !props.items.some((item) => item.id === props.draggedItem.id)
+})
 </script>
 
 <style scoped>
 .tier-row {
   display: flex;
-  min-height: 90px;
-  border-bottom: 2px solid #333;
+  min-height: 96px;
+}
+
+.tier-row + .tier-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .tier-label {
   width: 100px;
+  flex-shrink: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #111;
-  font-size: 32px;
-  font-weight: bold;
+
+  box-shadow: inset -12px 0 24px rgba(0, 0, 0, 0.12);
+
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 .tier-content {
   flex: 1;
-  background: #1c1c1c;
+  min-width: 0;
+
+  background: rgba(255, 255, 255, 0.015);
+
   display: flex;
-  gap: 10px;
   align-items: center;
-  padding: 10px;
   flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.tier-content:hover {
-  background: #252525;
+.tier-content.is-drag-over {
+  background: rgba(127, 156, 255, 0.1);
+  box-shadow: inset 0 0 0 2px rgba(127, 156, 255, 0.45);
+}
+
+@media (max-width: 600px) {
+  .tier-label {
+    width: 64px;
+    font-size: 20px;
+  }
 }
 </style>

@@ -14,9 +14,7 @@
       </nav>
 
       <div class="header-actions">
-        <button class="create-button" @click="openNewTierList">
-          Neue Tierlist
-        </button>
+        <button class="create-button" @click="openNewTierList">Neue Tierlist</button>
 
         <button class="menu-button" aria-label="Menü öffnen" @click="openMenu">
           <span></span>
@@ -37,9 +35,7 @@
         <h2>Menü</h2>
       </div>
 
-      <button class="close-button" aria-label="Menü schließen" @click="closeMenu">
-        ✕
-      </button>
+      <button class="close-button" aria-label="Menü schließen" @click="closeMenu">✕</button>
     </div>
 
     <div class="side-menu-content">
@@ -73,31 +69,31 @@
 <script setup>
 // Die Kopfzeile der App: Logo, Navigation, "Neue Tierlist"-Button und
 // das ausklappbare Seitenmenü (Hamburger-Menü) rechts.
-import { ref } from "vue";
+import { ref } from 'vue'
 
-const emit = defineEmits(["go-home", "open-saved-lists", "new-tier-list"]);
+const emit = defineEmits(['go-home', 'open-saved-lists', 'new-tier-list'])
 
 // Steuert, ob das Seitenmenü (rechts eingeblendet) gerade offen ist
-const isMenuOpen = ref(false);
+const isMenuOpen = ref(false)
 
 function openMenu() {
-  isMenuOpen.value = true;
+  isMenuOpen.value = true
 }
 
 function closeMenu() {
-  isMenuOpen.value = false;
+  isMenuOpen.value = false
 }
 
 function openSavedLists() {
   // Menü zuerst schließen, dann App.vue Bescheid geben, dass das
   // "Gespeicherte Tierlists"-Modal geöffnet werden soll
-  closeMenu();
-  emit("open-saved-lists");
+  closeMenu()
+  emit('open-saved-lists')
 }
 
 function openNewTierList() {
-  closeMenu();
-  emit("new-tier-list");
+  closeMenu()
+  emit('new-tier-list')
 }
 </script>
 
@@ -117,7 +113,7 @@ function openNewTierList() {
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
 }
 
@@ -322,8 +318,7 @@ function openNewTierList() {
   height: 100vh;
 
   background:
-    radial-gradient(circle at top right, rgba(80, 88, 120, 0.16), transparent 34%),
-    #101016;
+    radial-gradient(circle at top right, rgba(80, 88, 120, 0.16), transparent 34%), #101016;
 
   border-left: 1px solid rgba(255, 255, 255, 0.09);
   box-shadow: -30px 0 70px rgba(0, 0, 0, 0.55);
@@ -339,7 +334,7 @@ function openNewTierList() {
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
 }
 

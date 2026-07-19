@@ -2,12 +2,23 @@
   <!-- draggable="true" macht die Karte per Maus ziehbar (Drag & Drop).
        Während der Name bearbeitet wird, schalten wir es kurz aus, damit man
        im Textfeld mit der Maus Text markieren kann, statt die Karte zu ziehen. -->
-  <div class="item-card" :draggable="!isEditingName" @dragstart="$emit('drag-start')">
+  <div
+    class="item-card"
+    :class="{ 'is-ghost': ghost }"
+    :draggable="!isEditingName && !ghost"
+    @dragstart="$emit('drag-start')"
+  >
     <!-- Stift-Button (Namen bearbeiten) und Löschen-Button (×) werden nur im
          Item-Pool angezeigt, nicht in den Tier-Reihen -->
     <button v-if="showDelete" class="edit-button" title="Namen bearbeiten" @click="startEditing">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-        stroke-linejoin="round">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M12 20h9" />
         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
       </svg>
@@ -35,7 +46,7 @@
 <script setup>
 // Eine einzelne Item-Karte (z. B. "Waves"), die sowohl im Item-Pool
 // als auch in den Tier-Reihen (S, A, B, ...) verwendet wird.
-import { nextTick, ref } from "vue";
+import { nextTick, ref } from 'vue'
 
 const props = defineProps({
   name: String,
@@ -51,46 +62,52 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-});
+  // ghost = abgedunkelte Vorschau-Karte, die zeigt, wo ein gezogenes Item
+  // landen würde. Nicht klickbar, nicht selbst ziehbar.
+  ghost: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits(["delete", "drag-start", "rename"]);
+const emit = defineEmits(['delete', 'drag-start', 'rename'])
 
 // Steuert, ob gerade der Name bearbeitet wird (Eingabefeld statt Text sichtbar)
-const isEditingName = ref(false);
+const isEditingName = ref(false)
 // Der Text im Eingabefeld, solange bearbeitet wird
-const editedName = ref("");
+const editedName = ref('')
 // Referenz auf das Eingabefeld, um es beim Öffnen automatisch zu fokussieren
-const editInputRef = ref(null);
+const editInputRef = ref(null)
 
 async function startEditing() {
-  editedName.value = props.name;
-  isEditingName.value = true;
+  editedName.value = props.name
+  isEditingName.value = true
 
   // nextTick wartet, bis Vue das Eingabefeld wirklich ins HTML eingefügt hat,
   // erst danach können wir es fokussieren
-  await nextTick();
-  editInputRef.value?.focus();
-  editInputRef.value?.select();
+  await nextTick()
+  editInputRef.value?.focus()
+  editInputRef.value?.select()
 }
 
 function saveEditing() {
   // Verhindert doppeltes Speichern, falls sowohl Enter als auch danach
   // "blur" (Fokus verlassen) ausgelöst werden
   if (!isEditingName.value) {
-    return;
+    return
   }
 
-  isEditingName.value = false;
+  isEditingName.value = false
 
-  const trimmedName = editedName.value.trim();
+  const trimmedName = editedName.value.trim()
 
   if (trimmedName && trimmedName !== props.name) {
-    emit("rename", trimmedName);
+    emit('rename', trimmedName)
   }
 }
 
 function cancelEditing() {
-  isEditingName.value = false;
+  isEditingName.value = false
 }
 </script>
 
@@ -101,18 +118,48 @@ function cancelEditing() {
   height: 100px;
   overflow: hidden;
 
-  background: #2a2a2a;
-  border: 2px solid #444;
-  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   color: white;
-  font-weight: bold;
+  font-weight: 800;
+  font-size: 0.85rem;
   text-align: center;
   padding: 10px;
+
+  cursor: grab;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.item-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+}
+
+.item-card:active {
+  cursor: grabbing;
+}
+
+.item-card.is-ghost {
+  opacity: 0.4;
+  border-style: dashed;
+  box-shadow: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+.item-card.is-ghost:hover {
+  transform: none;
 }
 
 .item-image {
