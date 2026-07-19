@@ -26,7 +26,7 @@ defineEmits(['cancel', 'confirm'])
 <style scoped>
 p {
   margin: 0;
-  color: #a8adbd;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 

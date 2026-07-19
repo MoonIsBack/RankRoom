@@ -121,7 +121,7 @@ defineEmits(['close'])
 .modal-label {
   margin: 0 0 6px;
 
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 0.78rem;
   font-weight: 900;
   text-transform: uppercase;

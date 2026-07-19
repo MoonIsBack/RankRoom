@@ -45,7 +45,7 @@ defineEmits(['close'])
 
 .notice-group p {
   margin: 0;
-  color: #a8adbd;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 

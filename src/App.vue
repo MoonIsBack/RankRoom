@@ -239,19 +239,38 @@ function openTierList(tierListId) {
 
 <style scoped>
 .page {
+  position: relative;
   min-height: 100vh;
 
+  /* Ruhiger Hintergrund: ein sehr sanfter Tiefen-Verlauf im leicht ins Indigo
+     gehenden Dunkel, darüber EIN dezenter, weicher Schimmer oben in der
+     Akzentfarbe. Ersetzt die zwei lauten Violett/Blau-Glows von früher. */
   background:
-    radial-gradient(circle at top left, rgba(124, 58, 237, 0.2), transparent 34%),
-    radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.16), transparent 32%), #0b0b0f;
+    radial-gradient(100% 60% at 50% -10%, rgba(129, 140, 248, 0.14), transparent 62%),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 
-  color: white;
+  color: var(--text);
+}
+
+/* Sehr feine Körnung (Film-Grain) über der ganzen Seite — gibt dem flachen
+   Dunkel Textur und einen "bewusst gestalteten" Eindruck. pointer-events: none,
+   damit die Körnung keine Klicks abfängt. */
+.page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  pointer-events: none;
+  opacity: 0.035;
+
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 .app {
   min-height: 100vh;
   padding: 25px 40px 50px;
-  color: white;
+  color: var(--text);
   font-family:
     Inter,
     system-ui,
@@ -373,6 +392,6 @@ function openTierList(tierListId) {
 .file-drop-message svg {
   width: 40px;
   height: 40px;
-  color: #a78bfa;
+  color: var(--accent);
 }
 </style>

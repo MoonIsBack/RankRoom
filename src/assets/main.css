@@ -1,3 +1,22 @@
+/* Zentrale Design-Tokens (Farb-Variablen) für die ganze App.
+   Hier an EINER Stelle definiert, überall per var(--name) verwendet — so bleibt
+   das Farbschema einheitlich und lässt sich zentral anpassen. */
+:root {
+  /* Hintergrund (dunkles, leicht ins Indigo gehendes Schwarz) */
+  --bg-top: #101019;
+  --bg-bottom: #0a0a11;
+
+  /* Schrift-Farbskala (leicht kühl, harmoniert mit dem Akzent) */
+  --text: #f1f2f7; /* Überschriften, wichtige Werte */
+  --text-secondary: #c3c6d6; /* normaler Fließtext */
+  --text-muted: #898da1; /* Labels, Nebeninfos */
+  --text-subtle: #5f6376; /* Platzhalter, ganz dezent */
+
+  /* Akzentfarbe (Icons, Hervorhebungen, aktive Zustände) */
+  --accent: #a5b4fc;
+  --accent-strong: #818cf8;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -12,8 +31,9 @@ body,
 
 html,
 body {
-  background: #0b0b0f;
+  background: var(--bg-bottom);
   min-height: 100%;
+  color: var(--text);
 }
 
 button,

@@ -242,7 +242,7 @@ function openNewTierList() {
   padding: 10px 15px;
 
   background: transparent;
-  color: #9ca3af;
+  color: var(--text-muted);
 
   font-size: 0.88rem;
   font-weight: 800;
@@ -412,7 +412,7 @@ function openNewTierList() {
 .menu-label {
   margin: 0 0 6px;
 
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 0.78rem;
   font-weight: 950;
   text-transform: uppercase;
@@ -492,7 +492,7 @@ function openNewTierList() {
   place-items: center;
 
   background: rgba(255, 255, 255, 0.085);
-  color: #c4b5fd;
+  color: var(--accent);
 }
 
 .side-menu-item span svg {
@@ -515,7 +515,7 @@ function openNewTierList() {
 
 .side-menu-footer p {
   margin: 0;
-  color: #8f96a3;
+  color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.55;
 }

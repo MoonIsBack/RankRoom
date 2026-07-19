@@ -60,7 +60,7 @@ function createTierList() {
   display: block;
   margin-bottom: 9px;
 
-  color: #cbd5e1;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 800;
 }
@@ -81,7 +81,7 @@ function createTierList() {
 }
 
 .name-input::placeholder {
-  color: #6b7280;
+  color: var(--text-subtle);
 }
 
 .name-input:focus {
@@ -109,7 +109,7 @@ function createTierList() {
 .cancel-button {
   border: 1px solid rgba(255, 255, 255, 0.09);
   background: rgba(255, 255, 255, 0.055);
-  color: #d1d5db;
+  color: var(--text-secondary);
 }
 
 .create-button {

@@ -151,13 +151,13 @@ function confirmDelete(listId) {
   display: block;
   margin-top: 5px;
 
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 700;
 }
 
 .saved-list-open span {
-  color: #c4b5fd;
+  color: var(--accent);
   font-size: 0.85rem;
   font-weight: 900;
   white-space: nowrap;

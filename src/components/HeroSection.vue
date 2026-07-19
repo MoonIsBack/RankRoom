@@ -65,7 +65,7 @@ defineProps({
   border-radius: 999px;
 
   background: rgba(124, 58, 237, 0.13);
-  color: #c4b5fd;
+  color: var(--accent);
 
   font-size: 12px;
   font-weight: 800;
@@ -85,7 +85,7 @@ h1 span {
   display: block;
   padding-bottom: 6px;
 
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -95,7 +95,7 @@ p {
   max-width: 560px;
   margin-top: 8px;
 
-  color: #a8a8b3;
+  color: var(--text-secondary);
   font-size: 15px;
   line-height: 1.4;
 }
@@ -123,7 +123,7 @@ p {
 .hero-card-label {
   margin: 0 0 5px;
 
-  color: #a78bfa;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -138,7 +138,7 @@ p {
 .hero-card small {
   margin-top: 6px;
 
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-weight: 700;
 }

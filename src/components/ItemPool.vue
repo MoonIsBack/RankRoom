@@ -76,7 +76,7 @@ function handleDrop() {
 .empty-hint {
   margin: auto;
 
-  color: #6b7280;
+  color: var(--text-subtle);
   font-size: 0.95rem;
   font-weight: 600;
   text-align: center;

@@ -58,7 +58,7 @@ defineProps({
 .stat-label {
   display: block;
   margin-bottom: 8px;
-  color: #a8adbd;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 600;
 }

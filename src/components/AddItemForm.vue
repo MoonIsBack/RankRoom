@@ -128,7 +128,7 @@ function handleFilesSelected(event) {
 
 .or-label {
   flex-shrink: 0;
-  color: #6b7280;
+  color: var(--text-subtle);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -151,7 +151,7 @@ function handleFilesSelected(event) {
   padding: 0 14px;
 
   background: rgba(255, 255, 255, 0.03);
-  color: #c8cad4;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   outline: none;
 
@@ -161,7 +161,7 @@ function handleFilesSelected(event) {
 }
 
 .text-add-row input[type='text']::placeholder {
-  color: #6b7280;
+  color: var(--text-subtle);
 }
 
 .text-add-row input[type='text']:focus {
