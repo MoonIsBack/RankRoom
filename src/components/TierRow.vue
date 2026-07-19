@@ -19,6 +19,7 @@
         v-for="item in items"
         :key="item.id"
         :name="item.name"
+        :image="item.image"
         :show-delete="false"
         @drag-start="$emit('drag-start', item)"
       />

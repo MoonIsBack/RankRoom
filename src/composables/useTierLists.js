@@ -121,18 +121,50 @@ export function useTierLists() {
       return;
     }
 
-    // Date.now() liefert eine (praktisch) eindeutige Zahl als id
     const newItem = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       name: trimmedName,
+      image: null,
     };
 
     items.value.push(newItem);
   }
 
+  // Fügt mehrere Items auf einmal hinzu, jeweils mit einem Bild.
+  // newImageItems ist eine Liste aus { name, image } (kommt z. B. aus
+  // useImageUpload.js, wenn mehrere Bilddateien per Drag & Drop oder
+  // Dateiauswahl ausgewählt wurden).
+  function addItemsFromImages(newImageItems) {
+    const newItems = newImageItems.map((entry) => ({
+      id: crypto.randomUUID(),
+      name: entry.name,
+      image: entry.image,
+    }));
+
+    items.value.push(...newItems);
+  }
+
   // Item komplett aus dem Pool entfernen (× -Button im ItemPool)
   function deleteItem(itemId) {
     items.value = items.value.filter((item) => item.id !== itemId);
+  }
+
+  // Benennt ein Item im Pool um (Stift-Button im ItemPool). Nützlich vor
+  // allem bei Bildern, deren Name sonst einfach der Dateiname wäre.
+  function renameItem(itemId, newName) {
+    const trimmedName = newName.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    const item = items.value.find((item) => item.id === itemId);
+
+    if (!item) {
+      return;
+    }
+
+    item.name = trimmedName;
   }
 
   // Erstellt eine neue, leere Tierlist mit dem angegebenen Namen und
@@ -197,7 +229,9 @@ export function useTierLists() {
     totalItemCount,
     savedLists,
     addItem,
+    addItemsFromImages,
     deleteItem,
+    renameItem,
     createNewTierList,
     confirmReset,
     deleteTierList,

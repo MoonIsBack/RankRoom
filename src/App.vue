@@ -1,9 +1,15 @@
 <template>
-  <div class="page">
+  <!--
+    dragenter/dragleave/dragover/drop hier auf der obersten Ebene erlauben es,
+    Bilder von IRGENDWO auf der Seite reinzuziehen, nicht nur in einem
+    bestimmten Kasten (siehe useFileDropZone.js)
+  -->
+  <div class="page" @dragenter="handleDragEnter" @dragleave="handleDragLeave" @dragover="handleDragOver"
+    @drop="handleDrop">
     <AppHeader @open-saved-lists="openSavedListsModal" @new-tier-list="openNewTierListModal" />
 
     <main class="app">
-      <HeroSection :total-items="totalItemCount" />
+      <HeroSection :tier-list-name="tierListName" :total-items="totalItemCount" />
 
       <StatsGrid :total-items="totalItemCount" :ranked-items="rankedItemCount" :unranked-items="unrankedItemCount" />
 
@@ -14,17 +20,26 @@
       </section>
 
       <section class="control-panel">
-        <AddItemForm @add-item="addItem" />
+        <AddItemForm @add-item="addItem" @add-images="addItemsFromImages"
+          @invalid-image-types="showInvalidFileTypesError" />
         <button class="reset-button" @click="openResetModal">Zurücksetzen</button>
       </section>
 
-      <ItemPool :items="items" @delete-item="deleteItem" @drag-start="startDrag" @drop-to-pool="dropItemToPool" />
+      <ItemPool :items="items" @delete-item="deleteItem" @drag-start="startDrag" @drop-to-pool="dropItemToPool"
+        @rename-item="renameItem" />
 
       <ResetModal v-if="showResetModal" @cancel="closeResetModal" @confirm="confirmReset" />
       <SavedListsModal v-if="showSavedListsModal" :saved-lists="savedLists" @close="closeSavedListsModal"
         @open-list="openTierList" @delete-list="deleteTierList" />
       <NewTierListModal v-if="showNewTierListModal" @close="closeNewTierListModal" @create="createNewTierList" />
+      <InvalidFileTypeModal v-if="invalidFileNames.length > 0" :file-names="invalidFileNames"
+        @close="closeInvalidFileTypeModal" />
     </main>
+
+    <!-- Overlay, das erscheint, während man ein Bild über die Seite zieht -->
+    <div v-if="isDraggingFile" class="file-drop-overlay">
+      <div class="file-drop-message">🖼 Bilder hier ablegen, um sie hinzuzufügen</div>
+    </div>
   </div>
 </template>
 
@@ -43,14 +58,18 @@ import ResetModal from "./components/ResetModal.vue";
 import SavedListsModal from "./components/SavedListsModal.vue";
 import NewTierListModal from "./components/NewTierListModal.vue";
 import ItemPool from "./components/ItemPool.vue";
+import InvalidFileTypeModal from "./components/InvalidFileTypeModal.vue";
 
 import { useTierLists } from "./composables/useTierLists";
 import { useDragAndDrop } from "./composables/useDragAndDrop";
+import { useFileDropZone } from "./composables/useFileDropZone";
+import { readImageFiles } from "./composables/useImageUpload";
 
 // Alles rund um Tierlisten (laden, speichern, erstellen, löschen, Items verwalten).
 // Die Funktionen mit "as ...Store" werden gleich noch um Drag-Reset und
 // Modal-Schließen ergänzt, deshalb bekommen sie hier interne Namen.
 const {
+  tierListName,
   items,
   tiers,
   rankedItemCount,
@@ -58,7 +77,9 @@ const {
   totalItemCount,
   savedLists,
   addItem,
+  addItemsFromImages,
   deleteItem,
+  renameItem,
   deleteTierList,
   createNewTierList: createTierListInStore,
   confirmReset: resetTierListInStore,
@@ -69,10 +90,42 @@ const {
 const { startDrag, startDragFromTier, dropItem, dropItemToPool, resetDrag } =
   useDragAndDrop(items, tiers);
 
+// Wird aufgerufen, wenn irgendwo auf der Seite Bilddateien abgelegt werden.
+// Anders als beim Datei-Dialog gibt es hier keine automatische Sperre für
+// falsche Dateitypen, deshalb prüfen wir hier selbst und zeigen bei Bedarf
+// das Fehler-Popup.
+async function handleDroppedFiles(fileList) {
+  const { items, rejectedFileNames } = await readImageFiles(fileList);
+
+  if (items.length > 0) {
+    addItemsFromImages(items);
+  }
+
+  if (rejectedFileNames.length > 0) {
+    showInvalidFileTypesError(rejectedFileNames);
+  }
+}
+
+// Erlaubt es, Bilder von überall auf der Seite reinzuziehen (siehe Vorlage oben)
+const { isDraggingFile, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
+  useFileDropZone(handleDroppedFiles);
+
 // Steuert, welches Modal (Popup) gerade sichtbar ist
 const showResetModal = ref(false);
 const showSavedListsModal = ref(false);
 const showNewTierListModal = ref(false);
+
+// Namen der zuletzt abgelehnten Dateien (falsches Format). Ist die Liste leer,
+// wird das Fehler-Popup nicht angezeigt (siehe v-if oben im Template).
+const invalidFileNames = ref([]);
+
+function showInvalidFileTypesError(fileNames) {
+  invalidFileNames.value = fileNames;
+}
+
+function closeInvalidFileTypeModal() {
+  invalidFileNames.value = [];
+}
 
 // --- Reset-Modal (Tierlist zurücksetzen) ---
 function openResetModal() {
@@ -214,5 +267,35 @@ function openTierList(tierListId) {
   .reset-button {
     width: 100%;
   }
+}
+
+.file-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(124, 58, 237, 0.18);
+  backdrop-filter: blur(4px);
+
+  /* Die Maus soll die Seite darunter "durchgreifen" können, damit der
+     Drop weiterhin von .page selbst erkannt wird */
+  pointer-events: none;
+}
+
+.file-drop-message {
+  padding: 24px 36px;
+
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+
+  background: rgba(11, 11, 15, 0.85);
+  color: white;
+
+  font-size: 1.2rem;
+  font-weight: 800;
 }
 </style>

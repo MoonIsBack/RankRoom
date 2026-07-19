@@ -9,7 +9,7 @@ defineProps({
   },
 });
 
-defineEmits(["delete-item", "drag-start", "drop-to-pool"]);
+defineEmits(["delete-item", "drag-start", "drop-to-pool", "rename-item"]);
 </script>
 
 <template>
@@ -19,8 +19,10 @@ defineEmits(["delete-item", "drag-start", "drop-to-pool"]);
       v-for="item in items"
       :key="item.id"
       :name="item.name"
+      :image="item.image"
       @delete="$emit('delete-item', item.id)"
       @drag-start="$emit('drag-start', item)"
+      @rename="$emit('rename-item', item.id, $event)"
     />
   </section>
 </template>

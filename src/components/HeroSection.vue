@@ -16,16 +16,21 @@
 
     <div class="hero-card">
       <p class="hero-card-label">Aktuelle Liste</p>
-      <strong>RankRoom Default</strong>
+      <strong>{{ tierListName }}</strong>
       <small>{{ totalItems }} Items insgesamt</small>
     </div>
   </section>
 </template>
 
 <script setup>
+// tierListName = Name der gerade aktiven Tierlist
 // totalItems kommt von der übergeordneten App.vue und zeigt an, wie viele
 // Items die aktuelle Tierlist insgesamt hat (eingestuft + noch nicht eingestuft)
 defineProps({
+  tierListName: {
+    type: String,
+    required: true,
+  },
   totalItems: {
     type: Number,
     required: true,
