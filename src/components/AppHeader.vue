@@ -60,24 +60,6 @@
         Gespeicherte Tierlists
       </button>
 
-      <button class="side-menu-item" @click="exportImage">
-        <span>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <circle cx="9" cy="9" r="2" />
-            <path d="M21 15l-5-5L5 21" />
-          </svg>
-        </span>
-        Als Bild speichern
-      </button>
-
       <button class="side-menu-item" @click="exportTierList">
         <span>
           <svg
@@ -142,10 +124,6 @@
         Einstellungen
       </button>
     </div>
-
-    <div class="side-menu-footer">
-      <p>Später speichern wir hier mehrere Tierlists mit LocalStorage.</p>
-    </div>
   </aside>
 </template>
 
@@ -154,14 +132,7 @@
 // das ausklappbare Seitenmenü (Hamburger-Menü) rechts.
 import { ref } from 'vue'
 
-const emit = defineEmits([
-  'go-home',
-  'open-saved-lists',
-  'new-tier-list',
-  'export',
-  'export-image',
-  'import-file',
-])
+const emit = defineEmits(['go-home', 'open-saved-lists', 'new-tier-list', 'export', 'import-file'])
 
 // Steuert, ob das Seitenmenü (rechts eingeblendet) gerade offen ist
 const isMenuOpen = ref(false)
@@ -193,13 +164,6 @@ function openNewTierList() {
 function exportTierList() {
   closeMenu()
   emit('export')
-}
-
-// Bild-Export: Menü schließen und App.vue Bescheid geben (dort öffnet sich das
-// "Als Bild speichern"-Modal mit Vorschau und Formatwahl)
-function exportImage() {
-  closeMenu()
-  emit('export-image')
 }
 
 // Import: den versteckten Datei-Dialog öffnen
@@ -581,20 +545,6 @@ function handleJsonSelected(event) {
   background: rgba(255, 255, 255, 0.085);
   border-color: rgba(255, 255, 255, 0.14);
   transform: translateX(-4px);
-}
-
-.side-menu-footer {
-  margin-top: auto;
-  padding: 25px 30px;
-
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.side-menu-footer p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.55;
 }
 
 @media (max-width: 900px) {

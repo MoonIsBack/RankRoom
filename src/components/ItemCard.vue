@@ -1,16 +1,23 @@
 <template>
-  <!-- draggable="true" macht die Karte per Maus ziehbar (Drag & Drop).
-       Während der Name bearbeitet wird, schalten wir es kurz aus, damit man
-       im Textfeld mit der Maus Text markieren kann, statt die Karte zu ziehen. -->
+  <!-- data-item-id wird für das Pointer-Drag-Hit-Testing gebraucht (siehe
+       usePointerDrag.js: darüber wird erkannt, über welcher Karte gerade
+       gezogen wird). Während der Name bearbeitet wird, lösen wir keinen Drag
+       aus, damit man im Textfeld mit der Maus Text markieren kann. -->
   <div
     class="item-card"
-    :class="{ 'is-ghost': ghost }"
-    :draggable="!isEditingName && !ghost"
-    @dragstart="$emit('drag-start')"
+    :class="{ 'is-dimmed': dimmed, 'is-floating': floating }"
+    :data-item-id="itemId"
+    @pointerdown="handlePointerDown"
   >
     <!-- Stift-Button (Namen bearbeiten) und Löschen-Button (×) werden nur im
          Item-Pool angezeigt, nicht in den Tier-Reihen -->
-    <button v-if="showDelete" class="edit-button" title="Namen bearbeiten" @click="startEditing">
+    <button
+      v-if="showDelete"
+      class="edit-button"
+      title="Namen bearbeiten"
+      @pointerdown.stop
+      @click="startEditing"
+    >
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -23,7 +30,9 @@
         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
       </svg>
     </button>
-    <button v-if="showDelete" class="delete-button" @click="$emit('delete')">×</button>
+    <button v-if="showDelete" class="delete-button" @pointerdown.stop @click="$emit('delete')">
+      ×
+    </button>
 
     <!-- Hat das Item ein Bild, füllt es die ganze Karte aus -->
     <img v-if="image" :src="image" :alt="name" class="item-image" draggable="false" />
@@ -37,7 +46,7 @@
       @keyup.enter="saveEditing"
       @keyup.esc="cancelEditing"
       @blur="saveEditing"
-      @mousedown.stop
+      @pointerdown.stop
     />
     <span v-else :class="{ 'item-caption': image }">{{ name }}</span>
   </div>
@@ -49,6 +58,12 @@
 import { nextTick, ref } from 'vue'
 
 const props = defineProps({
+  // Eindeutige id des Items — wird als data-item-id fürs Drag-Hit-Testing
+  // gebraucht (siehe usePointerDrag.js)
+  itemId: {
+    type: String,
+    required: true,
+  },
   name: String,
   // image = Data-URL des hochgeladenen Bildes, oder null/undefined bei
   // Items ohne Bild (dann wird nur der Name angezeigt)
@@ -62,15 +77,33 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-  // ghost = abgedunkelte Vorschau-Karte, die zeigt, wo ein gezogenes Item
-  // landen würde. Nicht klickbar, nicht selbst ziehbar.
-  ghost: {
+  // dimmed = dies ist das Original einer Karte, die gerade irgendwo hin
+  // gezogen wird (die schwebende Kopie zeigt currently, wohin). Abgedunkelt,
+  // damit klar ist: "diese Karte ist gerade unterwegs".
+  dimmed: {
+    type: Boolean,
+    default: false,
+  },
+  // floating = dies ist die schwebende Kopie, die während eines Drags der
+  // Zeiger-/Fingerposition folgt (siehe App.vue, per Teleport gerendert).
+  // Nicht klickbar, nimmt keine Zeiger-Events entgegen.
+  floating: {
     type: Boolean,
     default: false,
   },
 })
 
-const emit = defineEmits(['delete', 'drag-start', 'rename'])
+const emit = defineEmits(['delete', 'pointer-down', 'rename'])
+
+function handlePointerDown(event) {
+  // Während der Name bearbeitet wird oder bei den beiden Sonder-Varianten
+  // (dimmed/floating) soll kein neuer Drag starten
+  if (isEditingName.value || props.dimmed || props.floating) {
+    return
+  }
+
+  emit('pointer-down', event)
+}
 
 // Steuert, ob gerade der Name bearbeitet wird (Eingabefeld statt Text sichtbar)
 const isEditingName = ref(false)
@@ -165,19 +198,35 @@ function cancelEditing() {
   cursor: grabbing;
 }
 
-.item-card.is-ghost {
-  opacity: 0.4;
-  border-style: dashed;
-  box-shadow: none;
-  cursor: default;
+/* Original-Karte, während sie gerade irgendwohin gezogen wird */
+.item-card.is-dimmed {
+  opacity: 0.35;
+}
+
+.item-card.is-dimmed:hover {
+  transform: none;
+}
+
+/* Schwebende Kopie, die während eines Drags dem Zeiger/Finger folgt
+   (siehe Teleport in App.vue) */
+.item-card.is-floating {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+
+  cursor: grabbing;
   pointer-events: none;
 
-  /* Die Vorschau-Karte soll nicht mit einblenden */
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+  transform: translate(-50%, -50%) scale(1.06);
+
+  /* Die Platzier-Einblend-Animation soll bei der schwebenden Kopie nicht laufen */
   animation: none;
 }
 
-.item-card.is-ghost:hover {
-  transform: none;
+.item-card.is-floating:hover {
+  transform: translate(-50%, -50%) scale(1.06);
 }
 
 .item-image {

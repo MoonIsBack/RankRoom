@@ -13,6 +13,21 @@ export const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg']
 // weil manche Betriebssysteme nur nach der Endung filtern
 export const ALLOWED_IMAGE_ACCEPT = 'image/png,image/jpeg,.png,.jpg,.jpeg'
 
+// HEIC/HEIF-Dateiendungen, die IMMER abgelehnt werden — unabhängig davon, was
+// der Browser als file.type meldet. Grund: macOS wandelt HEIC-Fotos beim
+// Auswählen manchmal automatisch intern in JPEG um, bevor die Datei im
+// Browser ankommt. Dadurch meldet file.type fälschlich "image/jpeg" und die
+// Datei rutscht am reinen MIME-Type-Filter vorbei — sichtbar wird das durch
+// spürbares Ruckeln beim Ziehen, weil die Originalauflösung solcher Fotos oft
+// sehr groß ist. Die Dateiendung bleibt davon unberührt, deshalb prüfen wir
+// zusätzlich danach.
+const BLOCKED_IMAGE_EXTENSIONS = ['.heic', '.heif']
+
+function hasBlockedExtension(fileName) {
+  const lowerCaseName = fileName.toLowerCase()
+  return BLOCKED_IMAGE_EXTENSIONS.some((extension) => lowerCaseName.endsWith(extension))
+}
+
 // Liest eine einzelne Datei ein und wandelt sie in eine Data-URL um
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -43,10 +58,11 @@ function fileNameWithoutExtension(fileName) {
 export async function readImageFiles(fileList) {
   const allFiles = Array.from(fileList)
 
-  const validFiles = allFiles.filter((file) => ALLOWED_IMAGE_TYPES.includes(file.type))
-  const rejectedFileNames = allFiles
-    .filter((file) => !ALLOWED_IMAGE_TYPES.includes(file.type))
-    .map((file) => file.name)
+  const isAllowedFile = (file) =>
+    ALLOWED_IMAGE_TYPES.includes(file.type) && !hasBlockedExtension(file.name)
+
+  const validFiles = allFiles.filter(isAllowedFile)
+  const rejectedFileNames = allFiles.filter((file) => !isAllowedFile(file)).map((file) => file.name)
 
   const items = await Promise.all(
     validFiles.map(async (file) => ({

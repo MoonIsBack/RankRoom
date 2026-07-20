@@ -1,45 +1,48 @@
 <script setup>
 // Der Pool unten mit allen Items, die noch keiner Tier-Reihe zugeordnet sind.
-import ItemCard from './ItemCard.vue'
-import { useDragOver } from '../composables/useDragOver'
+import { computed } from 'vue'
 
-defineProps({
+import ItemCard from './ItemCard.vue'
+
+const props = defineProps({
   items: {
     type: Array,
     required: true,
   },
+  // id des Items, das gerade irgendwo auf der Seite gezogen wird (oder null)
+  draggedItemId: {
+    type: String,
+    default: null,
+  },
+  // Wo ein gezogenes Item gerade landen würde: { zone, index } oder null
+  dropTarget: {
+    type: Object,
+    default: null,
+  },
 })
 
-const emit = defineEmits(['delete-item', 'drag-start', 'drop-to-pool', 'rename-item'])
+defineEmits(['delete-item', 'pointer-down-item', 'rename-item'])
 
-// Hebt den Pool optisch hervor, solange eine Item-Karte darüber gezogen wird.
-// ignoreFiles: true -> beim Reinziehen von Dateien aus dem Ordner bleibt der
-// Pool unmarkiert (dann zeigt nur das große Seiten-Overlay an, dass man ablegen kann).
-const { isDragOver, onDragEnter, onDragLeave, reset } = useDragOver({ ignoreFiles: true })
-
-function handleDrop() {
-  reset()
-  emit('drop-to-pool')
-}
+// Hebt den Pool optisch hervor, solange eine Item-Karte darüber gezogen wird
+const isDragOver = computed(() => props.dropTarget?.zone === 'pool')
 </script>
 
 <template>
-  <!-- Wird eine Karte aus einer Tier-Reihe hierher zurückgezogen, landet sie wieder im Pool -->
-  <section
-    class="item-pool"
-    :class="{ 'is-drag-over': isDragOver }"
-    @dragenter="onDragEnter"
-    @dragleave="onDragLeave"
-    @dragover.prevent
-    @drop="handleDrop"
-  >
+  <!--
+    data-drop-zone="pool" identifiziert den Pool fürs Item-Drag-Hit-Testing
+    (siehe usePointerDrag.js). Die eigentliche Drop-Logik läuft komplett
+    dort — hier wird nur noch angezeigt, WAS gerade berechnet wurde.
+  -->
+  <section class="item-pool" :class="{ 'is-drag-over': isDragOver }" data-drop-zone="pool">
     <ItemCard
       v-for="item in items"
       :key="item.id"
+      :item-id="item.id"
       :name="item.name"
       :image="item.image"
+      :dimmed="draggedItemId === item.id"
       @delete="$emit('delete-item', item.id)"
-      @drag-start="$emit('drag-start', item)"
+      @pointer-down="$emit('pointer-down-item', { item, event: $event })"
       @rename="$emit('rename-item', item.id, $event)"
     />
 

@@ -15,7 +15,6 @@
       @open-saved-lists="openSavedListsModal"
       @new-tier-list="openNewTierListModal"
       @export="exportActiveTierList"
-      @export-image="openExportImageModal"
       @import-file="handleImportFile"
     />
 
@@ -28,30 +27,81 @@
         :unranked-items="unrankedItemCount"
       />
 
-      <!-- Eine TierRow pro Tier (S, A, B, C, D) der aktiven Tierlist -->
+      <!-- Eine TierRow pro Tier-Reihe der aktiven Tierlist -->
       <section class="tierlist">
         <TierRow
-          v-for="tier in tiers"
-          :key="tier.name"
+          v-for="(tier, index) in tiers"
+          :key="tier.id"
+          :tier-id="tier.id"
           :name="tier.name"
           :color="tier.color"
           :items="tier.items"
-          :dragged-item="draggedItem"
-          @drop-item="dropItem(tier.name)"
-          @drag-start="startDragFromTier($event, tier.name)"
+          :row-index="index"
+          :dragged-item-id="draggedItem?.id ?? null"
+          :drop-target="dropTarget"
+          :dragged-row-index="draggedRowIndex"
+          :row-drop-index="rowDropIndex"
+          :can-delete-tier-row="canDeleteTierRow"
+          @pointer-down-item="({ item, event }) => startPointerDrag(event, item, tier.id)"
+          @row-pointer-down="startRowDrag($event, index)"
+          @rename-tier="renameTierRow(tier.id, $event)"
+          @change-tier-color="changeTierColor(tier.id, $event)"
+          @delete-tier="deleteTierRow(tier.id)"
         />
+
+        <!-- Zeigt an, wenn eine Reihe ganz ans Ende verschoben werden soll -->
+        <div v-if="rowDropIndex === tiers.length" class="row-insert-line-end" />
+
+        <!-- Schmale "+"-Zeile zum Hinzufügen einer neuen Tier-Reihe (max. 20) -->
+        <button v-if="canAddTierRow" type="button" class="add-row-button" @click="addTierRow">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Reihe hinzufügen
+        </button>
       </section>
 
       <section class="control-panel">
         <AddItemForm @add-item="addItem" @add-files="handleImageFiles" />
+
+        <button
+          type="button"
+          class="image-export-button"
+          title="Als Bild speichern"
+          aria-label="Als Bild speichern"
+          @click="openExportImageModal"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+        </button>
+
         <button class="reset-button" @click="openResetModal">Zurücksetzen</button>
       </section>
 
       <ItemPool
         :items="items"
+        :dragged-item-id="draggedItem?.id ?? null"
+        :drop-target="dropTarget"
         @delete-item="deleteItem"
-        @drag-start="startDrag"
-        @drop-to-pool="dropItemToPool"
+        @pointer-down-item="({ item, event }) => startPointerDrag(event, item, 'pool')"
         @rename-item="renameItem"
       />
 
@@ -86,6 +136,19 @@
       />
     </main>
 
+    <!-- Schwebende Kopie der gerade gezogenen Karte, folgt Maus/Finger.
+         Per Teleport an <body>, damit sie über allem anderen liegt. -->
+    <Teleport to="body">
+      <ItemCard
+        v-if="draggedItem"
+        :item-id="draggedItem.id"
+        :name="draggedItem.name"
+        :image="draggedItem.image"
+        floating
+        :style="{ left: pointerPosition.x + 'px', top: pointerPosition.y + 'px' }"
+      />
+    </Teleport>
+
     <!-- Overlay, das erscheint, während man ein Bild über die Seite zieht -->
     <div v-if="isDraggingFile" class="file-drop-overlay">
       <div class="file-drop-message">
@@ -110,7 +173,8 @@
 <script setup>
 // App.vue steckt hier nur noch die Bausteine zusammen: Sie holt sich den
 // kompletten Tierlisten-Zustand aus useTierLists() und die Drag & Drop-Logik
-// aus useDragAndDrop() und reicht beides an die Komponenten weiter.
+// aus usePointerDrag()/useRowPointerDrag() und reicht beides an die
+// Komponenten weiter.
 import { ref } from 'vue'
 
 import AppHeader from './components/AppHeader.vue'
@@ -119,6 +183,7 @@ import TierRow from './components/TierRow.vue'
 import StatsGrid from './components/StatsGrid.vue'
 import AddItemForm from './components/AddItemForm.vue'
 import ItemPool from './components/ItemPool.vue'
+import ItemCard from './components/ItemCard.vue'
 import ResetModal from './components/modals/ResetModal.vue'
 import SavedListsModal from './components/modals/SavedListsModal.vue'
 import NewTierListModal from './components/modals/NewTierListModal.vue'
@@ -127,7 +192,8 @@ import InfoModal from './components/modals/InfoModal.vue'
 import ExportImageModal from './components/modals/ExportImageModal.vue'
 
 import { useTierLists } from './composables/useTierLists'
-import { useDragAndDrop } from './composables/useDragAndDrop'
+import { usePointerDrag } from './composables/usePointerDrag'
+import { useRowPointerDrag } from './composables/useRowPointerDrag'
 import { useFileDropZone } from './composables/useFileDropZone'
 import { readImageFiles } from './composables/useImageUpload'
 import { parseTierListFile } from './utils/importTierList'
@@ -148,6 +214,12 @@ const {
   addItemsFromImages,
   deleteItem,
   renameItem,
+  canAddTierRow,
+  canDeleteTierRow,
+  addTierRow,
+  deleteTierRow,
+  renameTierRow,
+  changeTierColor,
   deleteTierList,
   exportActiveTierList,
   importTierList,
@@ -157,10 +229,24 @@ const {
 } = useTierLists()
 
 // Drag & Drop braucht Zugriff auf items/tiers der aktiven Tierlist von oben.
-// draggedItem wird an die Tier-Reihen weitergereicht, damit sie beim
-// Drüberziehen eine Vorschau des Items anzeigen können.
-const { draggedItem, startDrag, startDragFromTier, dropItem, dropItemToPool, resetDrag } =
-  useDragAndDrop(items, tiers)
+// draggedItem/dropTarget werden an Pool und Tier-Reihen weitergereicht, damit
+// sie beim Drüberziehen eine Vorschau anzeigen können; pointerPosition steuert
+// die schwebende Karte weiter unten im Template (Teleport).
+const { draggedItem, pointerPosition, dropTarget, startPointerDrag, resetDrag } = usePointerDrag(
+  items,
+  tiers,
+)
+
+// Eigenständiges zweites Drag-System nur fürs Umsortieren der Tier-Reihen
+// selbst (siehe useRowPointerDrag.js für die Begründung der Trennung)
+const { draggedRowIndex, rowDropIndex, startRowDrag, resetRowDrag } = useRowPointerDrag(tiers)
+
+// Wird an mehreren Stellen gebraucht, wenn während eines laufenden Drags die
+// Tierlist gewechselt/zurückgesetzt wird
+function resetAllDrags() {
+  resetDrag()
+  resetRowDrag()
+}
 
 // Zentrale Verarbeitung für Bilddateien — egal ob sie über den Datei-Dialog
 // ("Bilder auswählen") oder per Drag & Drop auf die Seite kommen.
@@ -225,7 +311,7 @@ async function handleImportFile(file) {
   try {
     const parsedTierList = await parseTierListFile(file)
     importTierList(parsedTierList)
-    resetDrag()
+    resetAllDrags()
   } catch (error) {
     infoMessage.value = {
       title: 'Import fehlgeschlagen',
@@ -264,14 +350,14 @@ function closeNewTierListModal() {
 // Neue Tierlist erstellen, laufenden Drag abbrechen und Modal schließen
 function createNewTierList(newName) {
   createTierListInStore(newName)
-  resetDrag()
+  resetAllDrags()
   showNewTierListModal.value = false
 }
 
 // Aktive Tierlist zurücksetzen, laufenden Drag abbrechen und Modal schließen
 function confirmReset() {
   resetTierListInStore()
-  resetDrag()
+  resetAllDrags()
   showResetModal.value = false
 }
 
@@ -279,7 +365,7 @@ function confirmReset() {
 // und das "Gespeicherte Tierlists"-Modal schließen
 function openTierList(tierListId) {
   openTierListInStore(tierListId)
-  resetDrag()
+  resetAllDrags()
   showSavedListsModal.value = false
 }
 </script>
@@ -345,6 +431,46 @@ function openTierList(tierListId) {
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
 }
 
+.row-insert-line-end {
+  height: 3px;
+  margin: 0 14px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.add-row-button {
+  width: 100%;
+  padding: 12px;
+
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-size: 0.85rem;
+  font-weight: 700;
+
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.add-row-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-row-button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .control-panel {
   width: 100%;
   max-width: 1100px;
@@ -360,6 +486,39 @@ function openTierList(tierListId) {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.image-export-button {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.image-export-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.image-export-button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text);
 }
 
 .reset-button {
@@ -396,6 +555,10 @@ function openTierList(tierListId) {
     align-items: stretch;
   }
 
+  .image-export-button {
+    align-self: center;
+  }
+
   .reset-button {
     width: 100%;
   }
@@ -426,9 +589,17 @@ function openTierList(tierListId) {
 
   background: rgba(11, 11, 15, 0.85);
   color: white;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 
   font-size: 1.2rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
 
   display: flex;
   flex-direction: column;

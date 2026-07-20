@@ -9,8 +9,9 @@
       </h1>
 
       <p>
-        Sortiere Plugins, Games, Songs oder alles, was du ranken möchtest — modern, schnell und
-        übersichtlich.
+        Eine Tierlist ordnet Dinge nach Rang – von S für die absolute Spitze bis D für den Rest.
+        Zieh deine Favoriten per Drag &amp; Drop in die passende Reihe und behalte auf einen Blick
+        den Überblick.
       </p>
     </div>
 

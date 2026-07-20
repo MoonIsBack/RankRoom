@@ -1,100 +1,224 @@
 <template>
-  <div class="tier-row">
-    <!-- Das farbige Label links, z. B. "S", "A", "B" -->
+  <div
+    class="tier-row"
+    :data-row-index="rowIndex"
+    :class="{ 'is-row-dragging': draggedRowIndex === rowIndex }"
+  >
+    <!-- Erscheint über der Reihe, während eine andere Reihe genau hierhin
+         gezogen wird (siehe useRowPointerDrag.js) -->
+    <div v-if="rowDropIndex === rowIndex" class="row-insert-line" />
+
+    <!-- Sehr schmaler Griff zum Verschieben ganzer Reihen. Die sichtbare
+         Linie ist bewusst kaum zu erkennen, der Button selbst aber breiter,
+         damit er auf dem Handy trotzdem gut zu treffen ist. -->
+    <button
+      type="button"
+      class="row-handle"
+      aria-label="Reihe verschieben"
+      @pointerdown="$emit('row-pointer-down', $event)"
+    >
+      <span class="row-handle-bar"></span>
+    </button>
+
     <div class="tier-label" :style="{ backgroundColor: color }">
       {{ name }}
     </div>
 
     <!--
-      @dragover.prevent ist nötig, damit der Browser hier überhaupt ein
-      "drop" erlaubt (sonst wird der Drop automatisch abgelehnt).
-      @dragenter/@dragleave steuern die Hervorhebung, während man etwas
-      darüber hält, @drop feuert, wenn eine Karte hier abgelegt wird.
+      data-drop-zone identifiziert diese Reihe fürs Item-Drag-Hit-Testing
+      (siehe usePointerDrag.js). Die eigentliche Drop-Logik läuft komplett
+      dort — hier wird nur noch angezeigt, WAS gerade berechnet wurde.
     -->
-    <div
-      class="tier-content"
-      :class="{ 'is-drag-over': isDragOver }"
-      @dragenter="onDragEnter"
-      @dragleave="onDragLeave"
-      @dragover.prevent
-      @drop="handleDrop"
-    >
-      <ItemCard
-        v-for="item in items"
-        :key="item.id"
-        :name="item.name"
-        :image="item.image"
-        :show-delete="false"
-        @drag-start="$emit('drag-start', item)"
-      />
+    <div class="tier-content" :class="{ 'is-drag-over': isDropZone }" :data-drop-zone="tierId">
+      <template v-for="(item, index) in items" :key="item.id">
+        <Transition name="gap">
+          <div v-if="showGapAt(index)" class="insert-gap" />
+        </Transition>
 
-      <!-- Abgedunkelte Vorschau: zeigt genau, wo das gezogene Item landen
-           würde, solange man es über dieser Reihe hält -->
-      <ItemCard
-        v-if="showGhost"
-        :name="draggedItem.name"
-        :image="draggedItem.image"
-        :show-delete="false"
-        ghost
-      />
+        <ItemCard
+          :item-id="item.id"
+          :name="item.name"
+          :image="item.image"
+          :show-delete="false"
+          :dimmed="draggedItemId === item.id"
+          @pointer-down="$emit('pointer-down-item', { item, event: $event })"
+        />
+      </template>
+
+      <Transition name="gap">
+        <div v-if="showGapAt(items.length)" class="insert-gap" />
+      </Transition>
     </div>
+
+    <button
+      ref="settingsButtonRef"
+      type="button"
+      class="row-settings-button"
+      aria-label="Reihen-Einstellungen"
+      @click="openSettings"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+        />
+      </svg>
+    </button>
+
+    <TierRowSettingsPopover
+      v-if="isSettingsOpen"
+      :tier-name="name"
+      :tier-color="color"
+      :can-delete="canDeleteTierRow"
+      :anchor-rect="settingsAnchorRect"
+      @close="isSettingsOpen = false"
+      @rename="$emit('rename-tier', $event)"
+      @change-color="$emit('change-tier-color', $event)"
+      @delete="$emit('delete-tier')"
+    />
   </div>
 </template>
 
 <script setup>
 // Eine einzelne Reihe der Tierlist (z. B. die "S"-Reihe) mit allen
-// Items, die dort bereits einsortiert wurden.
-import { computed } from 'vue'
+// Items, die dort bereits einsortiert wurden, plus Griff zum Verschieben
+// der ganzen Reihe und Zahnrad für Name/Farbe/Löschen.
+import { computed, ref } from 'vue'
 
 import ItemCard from './ItemCard.vue'
-import { useDragOver } from '../composables/useDragOver'
+import TierRowSettingsPopover from './TierRowSettingsPopover.vue'
 
 const props = defineProps({
+  tierId: String,
   name: String,
   color: String,
   items: Array,
-  // Das Item, das gerade irgendwo auf der Seite gezogen wird (oder null,
-  // wenn gerade nichts gezogen wird) — kommt von App.vue
-  draggedItem: {
+  // Position dieser Reihe in tiers[] — fürs Reihen-Reorder (data-row-index)
+  rowIndex: Number,
+  // id des Items, das gerade irgendwo auf der Seite gezogen wird (oder null)
+  draggedItemId: {
+    type: String,
+    default: null,
+  },
+  // Wo ein gezogenes Item gerade landen würde: { zone, index } oder null
+  dropTarget: {
     type: Object,
     default: null,
   },
+  // Index der Reihe, die gerade verschoben wird (oder null)
+  draggedRowIndex: {
+    type: Number,
+    default: null,
+  },
+  // Index, an dem eine verschobene Reihe gerade landen würde (oder null)
+  rowDropIndex: {
+    type: Number,
+    default: null,
+  },
+  // Ob die Reihe gelöscht werden darf (mind. eine Reihe muss übrig bleiben)
+  canDeleteTierRow: Boolean,
 })
 
-// drop-item: eine Karte wurde in diese Reihe gezogen
-// drag-start: eine Karte aus dieser Reihe wird gerade gezogen (weg von hier)
-const emit = defineEmits(['drop-item', 'drag-start'])
+defineEmits([
+  'pointer-down-item',
+  'row-pointer-down',
+  'rename-tier',
+  'change-tier-color',
+  'delete-tier',
+])
 
-// Hebt die Reihe optisch hervor, solange eine Item-Karte darüber gezogen wird.
-// ignoreFiles: true -> beim Reinziehen von Dateien aus dem Ordner bleibt die
-// Reihe unmarkiert (dann zeigt nur das große Seiten-Overlay an, dass man ablegen kann).
-const { isDragOver, onDragEnter, onDragLeave, reset } = useDragOver({ ignoreFiles: true })
+// Steuert, ob das Reihen-Einstellungen-Popover gerade offen ist
+const isSettingsOpen = ref(false)
+// Referenz auf den Zahnrad-Button, um das Popover in seiner Nähe zu positionieren
+const settingsButtonRef = ref(null)
+// Position des Zahnrad-Buttons im Moment des Öffnens (das Popover wird per
+// Teleport an <body> gehängt, damit es nicht vom overflow:hidden des
+// Tierlist-Kastens abgeschnitten wird — dafür braucht es diese Koordinaten)
+const settingsAnchorRect = ref(null)
 
-function handleDrop() {
-  reset()
-  emit('drop-item')
+function openSettings() {
+  settingsAnchorRect.value = settingsButtonRef.value.getBoundingClientRect()
+  isSettingsOpen.value = true
 }
 
-// Vorschau nur zeigen, wenn wirklich etwas über dieser Reihe hängt UND das
-// Item nicht schon hier drin ist (sonst gäbe es beim Drüberziehen über die
-// eigene Reihe eine verwirrende doppelte Karte)
-const showGhost = computed(() => {
-  if (!isDragOver.value || !props.draggedItem) {
-    return false
-  }
+// Wird die ganze Reihe optisch hervorgehoben, weil gerade ein Item hierher
+// gezogen wird?
+const isDropZone = computed(() => props.dropTarget?.zone === props.tierId)
 
-  return !props.items.some((item) => item.id === props.draggedItem.id)
-})
+// Soll an dieser Stelle (vor Karte "index", oder nach der letzten bei
+// index === items.length) die Einfüge-Lücke angezeigt werden?
+function showGapAt(index) {
+  return props.dropTarget?.zone === props.tierId && props.dropTarget?.index === index
+}
 </script>
 
 <style scoped>
 .tier-row {
+  position: relative;
   display: flex;
   min-height: 96px;
 }
 
 .tier-row + .tier-row {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tier-row.is-row-dragging {
+  opacity: 0.45;
+}
+
+.row-insert-line {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* Griff zum Verschieben der ganzen Reihe: der Button ist breit genug, um ihn
+   auch mit dem Finger gut zu treffen, die sichtbare Linie darin bleibt aber
+   bewusst sehr schmal und dezent (kaum erkennbar, bis man genau hinschaut). */
+.row-handle {
+  flex-shrink: 0;
+  width: 22px;
+
+  border: none;
+  background: transparent;
+  cursor: grab;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  touch-action: none;
+}
+
+.row-handle:active {
+  cursor: grabbing;
+}
+
+.row-handle-bar {
+  width: 3px;
+  height: 28px;
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 0.15s ease;
+}
+
+.row-handle:hover .row-handle-bar {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 .tier-label {
@@ -135,10 +259,66 @@ const showGhost = computed(() => {
   box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb), 0.45);
 }
 
+.insert-gap {
+  width: 6px;
+  align-self: stretch;
+  flex-shrink: 0;
+
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.gap-enter-active,
+.gap-leave-active {
+  transition: opacity 0.12s ease;
+}
+
+.gap-enter-from,
+.gap-leave-to {
+  opacity: 0;
+}
+
+.row-settings-button {
+  flex-shrink: 0;
+  width: 40px;
+
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.row-settings-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.row-settings-button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 @media (max-width: 600px) {
   .tier-label {
     width: 64px;
     font-size: 20px;
+  }
+
+  .row-handle {
+    width: 18px;
+  }
+
+  .row-settings-button {
+    width: 34px;
   }
 }
 </style>

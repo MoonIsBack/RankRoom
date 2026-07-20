@@ -118,7 +118,8 @@ function handleFilesSelected(event) {
 
 .image-picker-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 32px rgba(var(--accent-rgb), 0.28);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 22px rgba(var(--accent-rgb), 0.16);
 }
 
 /* Das echte Datei-Feld bleibt komplett unsichtbar, wir nutzen nur den eigenen Button */
