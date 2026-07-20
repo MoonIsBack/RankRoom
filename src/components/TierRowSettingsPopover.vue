@@ -215,6 +215,14 @@ const style = computed(() => {
   background: rgba(255, 255, 255, 0.075);
 }
 
+@media (max-width: 700px) {
+  /* Mindestens 16px, sonst zoomt mobiles Safari/Chrome beim Fokussieren
+     automatisch in die Seite hinein */
+  .name-input {
+    font-size: 16px;
+  }
+}
+
 .color-swatches {
   display: flex;
   flex-wrap: wrap;

@@ -4,19 +4,24 @@
 // gar nicht — Pointer Events (pointerdown/move/up/cancel) decken Maus UND Touch
 // im selben Code ab.
 //
+// Damit der Browser bei Touch nicht selbst zu scrollen versucht, während man
+// eine Karte zieht, bekommen Karten in ItemCard.vue "touch-action: none".
+// Dadurch kann hier für Maus UND Touch dieselbe einfache Schwelle genutzt
+// werden (kein Long-Press-Timer nötig) — das war in einer früheren Version
+// anders gelöst, hat sich auf echten Handys aber als unzuverlässig
+// herausgestellt (Browser haben teils schon vor Ablauf des Timers eigene
+// Scroll-/Kontextmenü-Gesten gestartet).
+//
 // "items" und "tiers" werden von außen übergeben (kommen aus useTierLists),
 // damit dieses Composable nicht selbst wissen muss, woher die Daten kommen.
 import { reactive, ref } from 'vue'
 
-// Ab wie viel Bewegung (in Pixel) ein Maus-Drag "scharf" geschaltet wird
+import { createAutoScroll } from './useAutoScroll'
+
+// Ab wie viel Bewegung (in Pixel) ein Drag "scharf" geschaltet wird. Bei
+// Touch etwas großzügiger, weil Finger weniger präzise sind als eine Maus.
 const MOUSE_ARM_DISTANCE = 6
-// Ab wie viel Bewegung ein beginnender Touch-Long-Press wieder verworfen wird
-// (dann war es vermutlich ein Scroll-Versuch, kein Drag)
-const TOUCH_WOBBLE_DISTANCE = 10
-// Wie lange (in ms) ein Finger ruhig auf einer Karte liegen muss, bevor daraus
-// ein Drag wird. Vorher greifen wir nie in die Standard-Touch-Behandlung ein,
-// damit normales Scrollen der Seite mit dem Finger die ganze Zeit funktioniert.
-const TOUCH_ARM_DELAY = 200
+const TOUCH_ARM_DISTANCE = 8
 
 export function usePointerDrag(items, tiers) {
   // Das gerade gezogene Item, oder null. Ist NUR gesetzt, wenn der Drag
@@ -36,9 +41,16 @@ export function usePointerDrag(items, tiers) {
   let activePointerId = null
   let startX = 0
   let startY = 0
+  let lastClientX = 0
+  let lastClientY = 0
   let pendingItem = null
   let pendingFromZone = null
-  let longPressTimer = null
+
+  // Läuft während eines aktiven Drags nah am Bildschirmrand automatisch
+  // weiter, damit man auch über den sichtbaren Bereich hinaus verschieben
+  // kann. onTick berechnet das Drop-Ziel anhand der letzten bekannten
+  // Zeiger-Position neu, weil sich der Inhalt unter dem Finger verschiebt.
+  const autoScroll = createAutoScroll(() => updateDropTarget(lastClientX, lastClientY))
 
   // Findet das Array (Pool-Items oder die Items einer bestimmten Tier-Reihe),
   // das zu einer "Zone" (siehe data-drop-zone im Template) gehört
@@ -49,13 +61,6 @@ export function usePointerDrag(items, tiers) {
 
     const tier = tiers.value.find((tier) => tier.id === zone)
     return tier ? tier.items : null
-  }
-
-  function clearLongPressTimer() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      longPressTimer = null
-    }
   }
 
   // Schaltet den Drag "scharf": ab jetzt gilt es als echtes Ziehen, nicht mehr
@@ -69,8 +74,7 @@ export function usePointerDrag(items, tiers) {
 
   // Wird beim Antippen/Klicken einer Karte aufgerufen (aus ItemCard, über
   // ItemPool/TierRow nach oben gereicht). Startet noch KEINEN Drag — erst
-  // wenn sich der Zeiger genug bewegt (Maus) oder lang genug ruhig liegt
-  // (Touch/Stift).
+  // wenn sich der Zeiger genug bewegt (siehe handlePointerMove).
   function startPointerDrag(event, item, fromZone) {
     // Falls schon eine Geste läuft (sollte normalerweise nicht passieren),
     // vorher sauber aufräumen
@@ -86,14 +90,12 @@ export function usePointerDrag(items, tiers) {
     activePointerId = event.pointerId
     startX = event.clientX
     startY = event.clientY
+    lastClientX = event.clientX
+    lastClientY = event.clientY
     pointerPosition.x = event.clientX
     pointerPosition.y = event.clientY
     pendingItem = item
     pendingFromZone = fromZone
-
-    if (event.pointerType !== 'mouse') {
-      longPressTimer = setTimeout(armDrag, TOUCH_ARM_DELAY)
-    }
 
     window.addEventListener('pointermove', handlePointerMove, { passive: false })
     window.addEventListener('pointerup', handlePointerUp)
@@ -105,31 +107,28 @@ export function usePointerDrag(items, tiers) {
       return
     }
 
+    lastClientX = event.clientX
+    lastClientY = event.clientY
     pointerPosition.x = event.clientX
     pointerPosition.y = event.clientY
 
     if (!draggedItem.value) {
       const distance = Math.hypot(event.clientX - startX, event.clientY - startY)
+      const armDistance = event.pointerType === 'mouse' ? MOUSE_ARM_DISTANCE : TOUCH_ARM_DISTANCE
 
-      if (event.pointerType === 'mouse') {
-        if (distance < MOUSE_ARM_DISTANCE) {
-          return
-        }
-        armDrag()
-      } else {
-        // Wackelt der Finger vor Ablauf des Long-Press deutlich, war es
-        // vermutlich ein Scroll-Versuch -> Drag verwerfen, Seite scrollt normal weiter
-        if (distance > TOUCH_WOBBLE_DISTANCE) {
-          resetInternal()
-        }
+      if (distance < armDistance) {
         return
       }
+
+      armDrag()
     }
 
     // Ab hier läuft ein echter Drag: Scrollen/Standardverhalten für diese
-    // eine Geste unterbinden (vorher wurde das bewusst nie aufgerufen)
+    // eine Geste unterbinden (die betroffenen Elemente haben zusätzlich
+    // touch-action: none, siehe ItemCard.vue)
     event.preventDefault()
     updateDropTarget(event.clientX, event.clientY)
+    autoScroll.update(event.clientY)
   }
 
   // Ermittelt per Hit-Test (welches Element liegt gerade unter dem Zeiger),
@@ -231,7 +230,7 @@ export function usePointerDrag(items, tiers) {
     window.removeEventListener('pointermove', handlePointerMove)
     window.removeEventListener('pointerup', handlePointerUp)
     window.removeEventListener('pointercancel', handlePointerCancel)
-    clearLongPressTimer()
+    autoScroll.stop()
     document.body.style.userSelect = ''
 
     activePointerId = null

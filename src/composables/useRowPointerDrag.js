@@ -8,13 +8,16 @@
 // beide einen eigenen State-Baum haben und nie denselben Code-Pfad teilen.
 //
 // Gleiches Grundprinzip wie usePointerDrag.js (Maus/Touch-Schwellwerte,
-// Hit-Test per elementFromPoint), nur auf der Y-Achse statt X-Achse, weil
-// Reihen strikt vertikal gestapelt sind.
+// Hit-Test per elementFromPoint, Auto-Scroll am Bildschirmrand), nur auf der
+// Y-Achse statt X-Achse, weil Reihen strikt vertikal gestapelt sind. Der
+// Handle bekommt "touch-action: none" (siehe TierRow.vue), deshalb reicht
+// bei Touch dieselbe einfache Distanz-Schwelle wie bei der Maus.
 import { ref } from 'vue'
 
+import { createAutoScroll } from './useAutoScroll'
+
 const MOUSE_ARM_DISTANCE = 6
-const TOUCH_WOBBLE_DISTANCE = 10
-const TOUCH_ARM_DELAY = 200
+const TOUCH_ARM_DISTANCE = 8
 
 export function useRowPointerDrag(tiers) {
   // Index der Reihe, die gerade gezogen wird (oder null)
@@ -24,15 +27,11 @@ export function useRowPointerDrag(tiers) {
 
   let activePointerId = null
   let startY = 0
+  let lastClientX = 0
+  let lastClientY = 0
   let pendingIndex = null
-  let longPressTimer = null
 
-  function clearLongPressTimer() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      longPressTimer = null
-    }
-  }
+  const autoScroll = createAutoScroll(() => updateRowDropIndex(lastClientX, lastClientY))
 
   function armDrag() {
     draggedRowIndex.value = pendingIndex
@@ -40,7 +39,7 @@ export function useRowPointerDrag(tiers) {
   }
 
   // Wird beim Antippen/Klicken des Handles aufgerufen. Startet noch keinen
-  // Drag — erst nach genug Bewegung (Maus) oder kurzem, ruhigem Halten (Touch).
+  // Drag — erst nach genug Bewegung (siehe handlePointerMove).
   function startRowDrag(event, index) {
     if (activePointerId !== null) {
       resetInternal()
@@ -52,11 +51,9 @@ export function useRowPointerDrag(tiers) {
 
     activePointerId = event.pointerId
     startY = event.clientY
+    lastClientX = event.clientX
+    lastClientY = event.clientY
     pendingIndex = index
-
-    if (event.pointerType !== 'mouse') {
-      longPressTimer = setTimeout(armDrag, TOUCH_ARM_DELAY)
-    }
 
     window.addEventListener('pointermove', handlePointerMove, { passive: false })
     window.addEventListener('pointerup', handlePointerUp)
@@ -68,24 +65,23 @@ export function useRowPointerDrag(tiers) {
       return
     }
 
+    lastClientX = event.clientX
+    lastClientY = event.clientY
+
     if (draggedRowIndex.value === null) {
       const distance = Math.abs(event.clientY - startY)
+      const armDistance = event.pointerType === 'mouse' ? MOUSE_ARM_DISTANCE : TOUCH_ARM_DISTANCE
 
-      if (event.pointerType === 'mouse') {
-        if (distance < MOUSE_ARM_DISTANCE) {
-          return
-        }
-        armDrag()
-      } else {
-        if (distance > TOUCH_WOBBLE_DISTANCE) {
-          resetInternal()
-        }
+      if (distance < armDistance) {
         return
       }
+
+      armDrag()
     }
 
     event.preventDefault()
     updateRowDropIndex(event.clientX, event.clientY)
+    autoScroll.update(event.clientY)
   }
 
   function updateRowDropIndex(x, y) {
@@ -147,7 +143,7 @@ export function useRowPointerDrag(tiers) {
     window.removeEventListener('pointermove', handlePointerMove)
     window.removeEventListener('pointerup', handlePointerUp)
     window.removeEventListener('pointercancel', handlePointerCancel)
-    clearLongPressTimer()
+    autoScroll.stop()
     document.body.style.userSelect = ''
 
     activePointerId = null

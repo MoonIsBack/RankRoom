@@ -32,7 +32,14 @@
     <div class="tier-content" :class="{ 'is-drag-over': isDropZone }" :data-drop-zone="tierId">
       <template v-for="(item, index) in items" :key="item.id">
         <Transition name="gap">
-          <div v-if="showGapAt(index)" class="insert-gap" />
+          <ItemCard
+            v-if="showGapAt(index)"
+            item-id="__placeholder__"
+            :name="draggedItem?.name"
+            :image="draggedItem?.image"
+            :show-delete="false"
+            placeholder
+          />
         </Transition>
 
         <ItemCard
@@ -40,13 +47,20 @@
           :name="item.name"
           :image="item.image"
           :show-delete="false"
-          :dimmed="draggedItemId === item.id"
+          :dimmed="draggedItem?.id === item.id"
           @pointer-down="$emit('pointer-down-item', { item, event: $event })"
         />
       </template>
 
       <Transition name="gap">
-        <div v-if="showGapAt(items.length)" class="insert-gap" />
+        <ItemCard
+          v-if="showGapAt(items.length)"
+          item-id="__placeholder__"
+          :name="draggedItem?.name"
+          :image="draggedItem?.image"
+          :show-delete="false"
+          placeholder
+        />
       </Transition>
     </div>
 
@@ -102,9 +116,11 @@ const props = defineProps({
   items: Array,
   // Position dieser Reihe in tiers[] — fürs Reihen-Reorder (data-row-index)
   rowIndex: Number,
-  // id des Items, das gerade irgendwo auf der Seite gezogen wird (oder null)
-  draggedItemId: {
-    type: String,
+  // Das Item, das gerade irgendwo auf der Seite gezogen wird (oder null) —
+  // wird als ganzes Objekt gebraucht, damit die Platzhalter-Karte unten
+  // Name/Bild anzeigen kann, nicht nur die id
+  draggedItem: {
+    type: Object,
     default: null,
   },
   // Wo ein gezogenes Item gerade landen würde: { zone, index } oder null
@@ -201,7 +217,12 @@ function showGapAt(index) {
   align-items: center;
   justify-content: center;
 
+  /* Wie bei den Item-Karten: der Browser soll hier nie selbst scrollen
+     oder ein Kontextmenü anbieten wollen, das kollidiert sonst beim
+     Ziehen auf dem Handy mit unserer eigenen Pointer-Event-Logik */
   touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .row-handle:active {
@@ -259,23 +280,17 @@ function showGapAt(index) {
   box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb), 0.45);
 }
 
-.insert-gap {
-  width: 6px;
-  align-self: stretch;
-  flex-shrink: 0;
-
-  border-radius: 999px;
-  background: var(--accent);
-}
-
 .gap-enter-active,
 .gap-leave-active {
-  transition: opacity 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .gap-enter-from,
 .gap-leave-to {
   opacity: 0;
+  transform: scale(0.85);
 }
 
 .row-settings-button {

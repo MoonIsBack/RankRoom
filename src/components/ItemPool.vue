@@ -9,9 +9,9 @@ const props = defineProps({
     type: Array,
     required: true,
   },
-  // id des Items, das gerade irgendwo auf der Seite gezogen wird (oder null)
-  draggedItemId: {
-    type: String,
+  // Das Item, das gerade irgendwo auf der Seite gezogen wird (oder null)
+  draggedItem: {
+    type: Object,
     default: null,
   },
   // Wo ein gezogenes Item gerade landen würde: { zone, index } oder null
@@ -40,7 +40,7 @@ const isDragOver = computed(() => props.dropTarget?.zone === 'pool')
       :item-id="item.id"
       :name="item.name"
       :image="item.image"
-      :dimmed="draggedItemId === item.id"
+      :dimmed="draggedItem?.id === item.id"
       @delete="$emit('delete-item', item.id)"
       @pointer-down="$emit('pointer-down-item', { item, event: $event })"
       @rename="$emit('rename-item', item.id, $event)"

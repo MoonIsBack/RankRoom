@@ -37,7 +37,7 @@
           :color="tier.color"
           :items="tier.items"
           :row-index="index"
-          :dragged-item-id="draggedItem?.id ?? null"
+          :dragged-item="draggedItem"
           :drop-target="dropTarget"
           :dragged-row-index="draggedRowIndex"
           :row-drop-index="rowDropIndex"
@@ -98,7 +98,7 @@
 
       <ItemPool
         :items="items"
-        :dragged-item-id="draggedItem?.id ?? null"
+        :dragged-item="draggedItem"
         :drop-target="dropTarget"
         @delete-item="deleteItem"
         @pointer-down-item="({ item, event }) => startPointerDrag(event, item, 'pool')"

@@ -209,5 +209,11 @@ function handleFilesSelected(event) {
   .text-add-row {
     width: 100%;
   }
+
+  /* Mindestens 16px, sonst zoomt mobiles Safari/Chrome beim Fokussieren
+     automatisch in die Seite hinein */
+  .text-add-row input[type='text'] {
+    font-size: 16px;
+  }
 }
 </style>

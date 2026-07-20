@@ -10,11 +10,24 @@
       <nav class="desktop-nav">
         <button class="nav-link active">Dashboard</button>
         <button class="nav-link">Vorlagen</button>
-        <button class="nav-link">Community</button>
       </nav>
 
       <div class="header-actions">
-        <button class="create-button" @click="openNewTierList">Neue Tierlist</button>
+        <button class="create-button" @click="openNewTierList">
+          <svg
+            class="create-button-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span class="create-button-label">Neue Tierlist</span>
+        </button>
 
         <button class="menu-button" aria-label="Menü öffnen" @click="openMenu">
           <span></span>
@@ -320,6 +333,7 @@ function handleJsonSelected(event) {
   color: white;
   font-size: 0.92rem;
   font-weight: 900;
+  white-space: nowrap;
 
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.055)),
@@ -329,10 +343,23 @@ function handleJsonSelected(event) {
     0 12px 30px rgba(0, 0, 0, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
   transition:
     transform 0.2s ease,
     background 0.2s ease,
     border-color 0.2s ease;
+}
+
+/* Auf dem Desktop reicht das Textlabel, das Icon bleibt unsichtbar aber im
+   DOM (wird erst auf sehr schmalen Bildschirmen gebraucht, siehe unten) */
+.create-button-icon {
+  display: none;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .create-button:hover {
@@ -549,27 +576,97 @@ function handleJsonSelected(event) {
 
 @media (max-width: 900px) {
   .desktop-nav {
-    display: none;
+    gap: 2px;
+  }
+
+  .nav-link {
+    padding: 9px 12px;
+    font-size: 0.82rem;
   }
 }
 
+/* Ab hier wird's auf dem Handy eng: Logo, Navigation, "Neue Tierlist" und
+   das Menü-Icon sollen alle in EINER Zeile bleiben (nichts einfach
+   ausblenden), deshalb schrumpft ab hier konsequent alles ein Stück. */
 @media (max-width: 700px) {
   .top-header {
-    padding: 12px 14px 0;
+    padding: 10px 10px 0;
   }
 
   .header-shell {
-    padding: 0 12px;
-    border-radius: 22px;
+    padding: 0 8px 0 10px;
+    gap: 8px;
+    border-radius: 20px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .brand-name {
+    font-size: 1.05rem;
+  }
+
+  .desktop-nav {
+    padding: 3px;
+    gap: 1px;
+  }
+
+  .nav-link {
+    padding: 7px 9px;
+    font-size: 0.72rem;
+  }
+
+  .header-actions {
+    gap: 6px;
   }
 
   .create-button {
-    display: none;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  .menu-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
   }
 
   .side-menu {
     width: 100%;
     max-width: 100vw;
+  }
+}
+
+/* Ganz schmale Handys: Marken-Text weg (Logo reicht als Wiedererkennung),
+   "Neue Tierlist" wird zum reinen Icon-Button — so bleibt trotzdem alles
+   in der Kopfzeile sichtbar statt komplett zu verschwinden. */
+@media (max-width: 430px) {
+  .brand-name {
+    display: none;
+  }
+
+  .nav-link {
+    padding: 7px 8px;
+    font-size: 0.68rem;
+  }
+
+  .create-button {
+    padding: 10px;
+  }
+
+  .create-button-icon {
+    display: block;
+  }
+
+  .create-button-label {
+    display: none;
   }
 }
 </style>

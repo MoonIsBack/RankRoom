@@ -5,7 +5,7 @@
        aus, damit man im Textfeld mit der Maus Text markieren kann. -->
   <div
     class="item-card"
-    :class="{ 'is-dimmed': dimmed, 'is-floating': floating }"
+    :class="{ 'is-dimmed': dimmed, 'is-floating': floating, 'is-placeholder': placeholder }"
     :data-item-id="itemId"
     @pointerdown="handlePointerDown"
   >
@@ -91,14 +91,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // placeholder = gestrichelte "Hier landet die Karte"-Vorschau an der
+  // berechneten Einfüge-Position (siehe TierRow.vue/ItemPool.vue). Zeigt
+  // Bild/Name der gezogenen Karte, ist aber selbst nicht interaktiv.
+  placeholder: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['delete', 'pointer-down', 'rename'])
 
 function handlePointerDown(event) {
-  // Während der Name bearbeitet wird oder bei den beiden Sonder-Varianten
-  // (dimmed/floating) soll kein neuer Drag starten
-  if (isEditingName.value || props.dimmed || props.floating) {
+  // Während der Name bearbeitet wird oder bei einer der Sonder-Varianten
+  // (dimmed/floating/placeholder) soll kein neuer Drag starten
+  if (isEditingName.value || props.dimmed || props.floating || props.placeholder) {
     return
   }
 
@@ -167,6 +174,15 @@ function cancelEditing() {
   padding: 10px;
 
   cursor: grab;
+  /* Wichtig fürs Touch-Dragging: der Browser soll auf dieser Karte selbst
+     NIE scrollen/zoomen wollen, sonst liefert er sich beim Ziehen auf dem
+     Handy ein Wettrennen mit unserer eigenen Pointer-Event-Logik. Man
+     scrollt stattdessen einfach über die Fläche daneben. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+
   transition:
     transform 0.15s ease,
     border-color 0.15s ease,
@@ -229,6 +245,24 @@ function cancelEditing() {
   transform: translate(-50%, -50%) scale(1.06);
 }
 
+/* Gestrichelte "Hier landet die Karte"-Vorschau an der berechneten
+   Einfüge-Position (ersetzt den früheren dünnen Trennstrich — eine
+   kartenförmige Vorschau zeigt deutlicher, WAS wohin gezogen wird) */
+.item-card.is-placeholder {
+  border-style: dashed;
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.08);
+  box-shadow: none;
+  opacity: 0.65;
+  cursor: default;
+  pointer-events: none;
+  animation: none;
+}
+
+.item-card.is-placeholder:hover {
+  transform: none;
+}
+
 .item-image {
   position: absolute;
   inset: 0;
@@ -265,6 +299,11 @@ function cancelEditing() {
   color: white;
   font: inherit;
   text-align: center;
+
+  /* .item-card schaltet Text-Auswahl/Touch-Gesten global aus (fürs Dragging),
+     im Bearbeiten-Modus muss das Feld selbst aber wieder normal nutzbar sein */
+  touch-action: manipulation;
+  user-select: text;
 }
 
 .edit-button {
