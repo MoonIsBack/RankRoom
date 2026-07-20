@@ -14,7 +14,7 @@
 //
 // "items" und "tiers" werden von außen übergeben (kommen aus useTierLists),
 // damit dieses Composable nicht selbst wissen muss, woher die Daten kommen.
-import { reactive, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 import { createAutoScroll } from './useAutoScroll'
 
@@ -49,10 +49,14 @@ export function usePointerDrag(items, tiers) {
   let lastClientY = 0
   let pendingItem = null
   let pendingFromZone = null
-  // Schnappschuss der Kartenpositionen in der URSPRUNGS-Zone, genommen im
-  // Moment des Scharfschaltens (Map von item-id auf Rect) — siehe
-  // computeInsertIndexFromSnapshot weiter unten für die Begründung.
+  // Schnappschuss der Kartenpositionen in der URSPRUNGS-Zone (Map von
+  // item-id auf Rect) — siehe computeInsertIndexFromSnapshot weiter unten
+  // für die Begründung, und updateDropTarget dafür, wann er (neu) eingefangen wird.
   let originRectsSnapshot = null
+  // Für welchen Index der Schnappschuss zuletzt (neu) eingefangen wurde —
+  // verhindert wiederholtes Neu-Einfangen, solange sich die Zielposition
+  // nicht wirklich ändert.
+  let lastRecapturedIndex = null
 
   // Läuft während eines aktiven Drags nah am Bildschirmrand automatisch
   // weiter, damit man auch über den sichtbaren Bereich hinaus verschieben
@@ -78,7 +82,7 @@ export function usePointerDrag(items, tiers) {
     draggedItem.value = pendingItem
     draggedFromZone.value = pendingFromZone
     document.body.style.userSelect = 'none'
-    originRectsSnapshot = captureZoneRects(pendingFromZone)
+    originRectsSnapshot = captureZoneRects(pendingFromZone, pendingItem.id)
   }
 
   // Merkt sich die aktuellen Positionen aller Karten einer Zone. Wird nur
@@ -91,7 +95,7 @@ export function usePointerDrag(items, tiers) {
   // anderen) Zeiger-Position steht auf einmal eine andere Karte -> neue
   // Zielposition -> Karten rutschen wieder um -> usw. Der Schnappschuss
   // bleibt für die ganze Geste stabil und durchbricht dieses Hin-und-Her.
-  function captureZoneRects(zone) {
+  function captureZoneRects(zone, excludeItemId) {
     const zoneEl = [...document.querySelectorAll('[data-drop-zone]')].find(
       (el) => el.dataset.dropZone === zone,
     )
@@ -110,8 +114,14 @@ export function usePointerDrag(items, tiers) {
     // hat. Beim Vergleich in computeInsertIndexFromSnapshot wird die
     // Zeiger-Y-Position genauso umgerechnet, damit beide Seiten wieder
     // zueinander passen.
+    //
+    // Die gezogene Karte selbst (excludeItemId) wird NICHT mit eingefangen:
+    // sie ist visuell längst ausgeblendet und soll deshalb auch beim
+    // Zielen keine Rolle mehr spielen — sonst müsste man erst durch ihr
+    // komplettes "Phantom"-Rechteck hindurchziehen, bevor die eigentliche
+    // Nachbarkarte überhaupt als Ziel erkannt wird.
     zoneEl.querySelectorAll('[data-item-id]').forEach((el) => {
-      if (el.dataset.itemId !== '__placeholder__') {
+      if (el.dataset.itemId !== '__placeholder__' && el.dataset.itemId !== excludeItemId) {
         const rect = el.getBoundingClientRect()
         snapshot.set(el.dataset.itemId, {
           left: rect.left,
@@ -230,6 +240,29 @@ export function usePointerDrag(items, tiers) {
         : computeInsertIndexLive(x, y, targetItems, zoneEl)
 
     dropTarget.value = { zone, index }
+
+    // Sobald sich die Zielposition INNERHALB der Ursprungs-Zone wirklich
+    // ändert, verschiebt sich live auch die Platzhalter-Karte — und damit
+    // rutschen die ÜBRIGEN echten Karten in dieser Reihe (Original bleibt ja
+    // per display:none entfernt) jedes Mal ein Stück weiter zusammen. Der
+    // bisherige Schnappschuss spiegelt das noch nicht wider. Nach JEDER
+    // echten Änderung (nicht bei jedem Pixel) einmal — sobald Vue das DOM
+    // aktualisiert hat (nextTick) — neu einfangen, sonst müsste man beim
+    // Weiterziehen zunehmend weiter greifen, als die optisch bereits näher
+    // zusammengerückten Karten erwarten lassen. Bewusst über nextTick (statt
+    // synchron im selben Zug), damit sich Neuberechnung und Neu-Einfangen
+    // nicht gegenseitig eine Rückkopplungsschleife bescheren.
+    if (zone === draggedFromZone.value && index !== lastRecapturedIndex) {
+      lastRecapturedIndex = index
+      const zoneAtCapture = zone
+      const draggedIdAtCapture = draggedItem.value?.id
+
+      nextTick(() => {
+        if (draggedFromZone.value === zoneAtCapture) {
+          originRectsSnapshot = captureZoneRects(zoneAtCapture, draggedIdAtCapture)
+        }
+      })
+    }
   }
 
   // Wie breit (als Anteil der Kartenbreite) die "tote Zone" in der Mitte
@@ -457,6 +490,7 @@ export function usePointerDrag(items, tiers) {
     pendingItem = null
     pendingFromZone = null
     originRectsSnapshot = null
+    lastRecapturedIndex = null
 
     draggedItem.value = null
     draggedFromZone.value = null
