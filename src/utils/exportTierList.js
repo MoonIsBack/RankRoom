@@ -4,18 +4,7 @@
 // Die JSON enthält ALLES, was die Tierlist ausmacht: den Namen, alle Items
 // (mit Wörtern UND Bildern) und alle Tier-Reihen mit ihren Items.
 import { EXPORT_FORMAT } from './tierListFormat'
-
-// Baut aus einem Tierlist-Namen einen für Dateisysteme sicheren Dateinamen,
-// z. B. "Meine Liste!" -> "Meine-Liste.json"
-function buildFileName(name) {
-  const safe =
-    (name || 'tierlist')
-      .trim()
-      .replace(/[^a-z0-9-_]+/gi, '-') // alles außer Buchstaben/Zahlen/-/_ zu "-"
-      .replace(/^-+|-+$/g, '') || 'tierlist' // führende/abschließende "-" weg
-
-  return `${safe}.json`
-}
+import { sanitizeFileBaseName } from './fileName'
 
 // Wandelt die übergebene Tierlist in JSON um und startet den Browser-Download.
 export function downloadTierListAsJson(tierList) {
@@ -39,7 +28,7 @@ export function downloadTierListAsJson(tierList) {
 
   const link = document.createElement('a')
   link.href = url
-  link.download = buildFileName(tierList.name)
+  link.download = `${sanitizeFileBaseName(tierList.name)}.json`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)

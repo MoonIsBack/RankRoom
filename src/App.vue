@@ -15,6 +15,7 @@
       @open-saved-lists="openSavedListsModal"
       @new-tier-list="openNewTierListModal"
       @export="exportActiveTierList"
+      @export-image="openExportImageModal"
       @import-file="handleImportFile"
     />
 
@@ -78,6 +79,11 @@
         :message="infoMessage.text"
         @close="infoMessage = null"
       />
+      <ExportImageModal
+        v-if="showExportImageModal"
+        :tier-list="activeTierList"
+        @close="showExportImageModal = false"
+      />
     </main>
 
     <!-- Overlay, das erscheint, während man ein Bild über die Seite zieht -->
@@ -118,6 +124,7 @@ import SavedListsModal from './components/modals/SavedListsModal.vue'
 import NewTierListModal from './components/modals/NewTierListModal.vue'
 import FileNoticeModal from './components/modals/FileNoticeModal.vue'
 import InfoModal from './components/modals/InfoModal.vue'
+import ExportImageModal from './components/modals/ExportImageModal.vue'
 
 import { useTierLists } from './composables/useTierLists'
 import { useDragAndDrop } from './composables/useDragAndDrop'
@@ -129,6 +136,7 @@ import { parseTierListFile } from './utils/importTierList'
 // Die Funktionen mit "as ...Store" werden gleich noch um Drag-Reset und
 // Modal-Schließen ergänzt, deshalb bekommen sie hier interne Namen.
 const {
+  activeTierList,
   tierListName,
   items,
   tiers,
@@ -193,6 +201,11 @@ const { isDraggingFile, handleDragEnter, handleDragLeave, handleDragOver, handle
 const showResetModal = ref(false)
 const showSavedListsModal = ref(false)
 const showNewTierListModal = ref(false)
+const showExportImageModal = ref(false)
+
+function openExportImageModal() {
+  showExportImageModal.value = true
+}
 
 // Hinweis-Gruppen für das FileNoticeModal (übersprungene Bilder: falsches
 // Format und/oder doppelt). Ist die Liste leer, wird das Popup nicht angezeigt.

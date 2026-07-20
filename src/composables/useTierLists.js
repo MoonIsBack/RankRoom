@@ -291,6 +291,7 @@ export function useTierLists() {
   // Alles, was App.vue (oder andere Komponenten) von diesem Composable
   // benutzen dürfen, wird hier zurückgegeben
   return {
+    activeTierList,
     tierListName,
     items,
     tiers,

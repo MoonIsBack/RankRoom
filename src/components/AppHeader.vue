@@ -60,6 +60,24 @@
         Gespeicherte Tierlists
       </button>
 
+      <button class="side-menu-item" @click="exportImage">
+        <span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+        </span>
+        Als Bild speichern
+      </button>
+
       <button class="side-menu-item" @click="exportTierList">
         <span>
           <svg
@@ -75,7 +93,7 @@
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
         </span>
-        Exportieren
+        Exportieren (JSON)
       </button>
 
       <button class="side-menu-item" @click="openJsonPicker">
@@ -93,7 +111,7 @@
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
         </span>
-        Importieren
+        Importieren (JSON)
       </button>
 
       <!-- Unsichtbares Datei-Feld für den Import einer JSON-Tierlist -->
@@ -136,7 +154,14 @@
 // das ausklappbare Seitenmenü (Hamburger-Menü) rechts.
 import { ref } from 'vue'
 
-const emit = defineEmits(['go-home', 'open-saved-lists', 'new-tier-list', 'export', 'import-file'])
+const emit = defineEmits([
+  'go-home',
+  'open-saved-lists',
+  'new-tier-list',
+  'export',
+  'export-image',
+  'import-file',
+])
 
 // Steuert, ob das Seitenmenü (rechts eingeblendet) gerade offen ist
 const isMenuOpen = ref(false)
@@ -168,6 +193,13 @@ function openNewTierList() {
 function exportTierList() {
   closeMenu()
   emit('export')
+}
+
+// Bild-Export: Menü schließen und App.vue Bescheid geben (dort öffnet sich das
+// "Als Bild speichern"-Modal mit Vorschau und Formatwahl)
+function exportImage() {
+  closeMenu()
+  emit('export-image')
 }
 
 // Import: den versteckten Datei-Dialog öffnen
