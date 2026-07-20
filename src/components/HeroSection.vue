@@ -61,10 +61,10 @@ defineProps({
   margin-bottom: 10px;
   padding: 6px 12px;
 
-  border: 1px solid rgba(167, 139, 250, 0.38);
+  border: 1px solid rgba(var(--accent-rgb), 0.38);
   border-radius: 999px;
 
-  background: rgba(124, 58, 237, 0.13);
+  background: rgba(var(--accent-rgb), 0.13);
   color: var(--accent);
 
   font-size: 12px;

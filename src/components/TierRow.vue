@@ -131,8 +131,8 @@ const showGhost = computed(() => {
 }
 
 .tier-content.is-drag-over {
-  background: rgba(127, 156, 255, 0.1);
-  box-shadow: inset 0 0 0 2px rgba(127, 156, 255, 0.45);
+  background: rgba(var(--accent-rgb), 0.1);
+  box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb), 0.45);
 }
 
 @media (max-width: 600px) {

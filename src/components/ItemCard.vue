@@ -224,7 +224,7 @@ function cancelEditing() {
   left: 6px;
   z-index: 2;
 
-  background: rgba(127, 156, 255, 0.75);
+  background: rgba(var(--accent-rgb), 0.75);
   color: white;
   border: none;
   border-radius: 50%;
@@ -244,7 +244,7 @@ function cancelEditing() {
 }
 
 .edit-button:hover {
-  background: rgba(127, 156, 255, 0.95);
+  background: rgba(var(--accent-rgb), 0.95);
 }
 
 .delete-button {

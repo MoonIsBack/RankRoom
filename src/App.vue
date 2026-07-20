@@ -11,7 +11,12 @@
     @dragover="handleDragOver"
     @drop="handleDrop"
   >
-    <AppHeader @open-saved-lists="openSavedListsModal" @new-tier-list="openNewTierListModal" />
+    <AppHeader
+      @open-saved-lists="openSavedListsModal"
+      @new-tier-list="openNewTierListModal"
+      @export="exportActiveTierList"
+      @import-file="handleImportFile"
+    />
 
     <main class="app">
       <HeroSection :tier-list-name="tierListName" :total-items="totalItemCount" />
@@ -67,6 +72,12 @@
         :groups="fileNoticeGroups"
         @close="closeFileNotice"
       />
+      <InfoModal
+        v-if="infoMessage"
+        :title="infoMessage.title"
+        :message="infoMessage.text"
+        @close="infoMessage = null"
+      />
     </main>
 
     <!-- Overlay, das erscheint, während man ein Bild über die Seite zieht -->
@@ -106,11 +117,13 @@ import ResetModal from './components/modals/ResetModal.vue'
 import SavedListsModal from './components/modals/SavedListsModal.vue'
 import NewTierListModal from './components/modals/NewTierListModal.vue'
 import FileNoticeModal from './components/modals/FileNoticeModal.vue'
+import InfoModal from './components/modals/InfoModal.vue'
 
 import { useTierLists } from './composables/useTierLists'
 import { useDragAndDrop } from './composables/useDragAndDrop'
 import { useFileDropZone } from './composables/useFileDropZone'
 import { readImageFiles } from './composables/useImageUpload'
+import { parseTierListFile } from './utils/importTierList'
 
 // Alles rund um Tierlisten (laden, speichern, erstellen, löschen, Items verwalten).
 // Die Funktionen mit "as ...Store" werden gleich noch um Drag-Reset und
@@ -128,6 +141,8 @@ const {
   deleteItem,
   renameItem,
   deleteTierList,
+  exportActiveTierList,
+  importTierList,
   createNewTierList: createTierListInStore,
   confirmReset: resetTierListInStore,
   openTierList: openTierListInStore,
@@ -185,6 +200,25 @@ const fileNoticeGroups = ref([])
 
 function closeFileNotice() {
   fileNoticeGroups.value = []
+}
+
+// Einfaches Hinweis-Popup ({ title, text }) — z. B. wenn ein Import fehlschlägt.
+// null bedeutet: kein Popup sichtbar.
+const infoMessage = ref(null)
+
+// Liest eine ausgewählte JSON-Datei ein und fügt sie als neue Tierlist hinzu.
+// Schlägt das Einlesen fehl (kaputte/fremde Datei), zeigen wir einen Hinweis.
+async function handleImportFile(file) {
+  try {
+    const parsedTierList = await parseTierListFile(file)
+    importTierList(parsedTierList)
+    resetDrag()
+  } catch (error) {
+    infoMessage.value = {
+      title: 'Import fehlgeschlagen',
+      text: error.message,
+    }
+  }
 }
 
 // --- Reset-Modal (Tierlist zurücksetzen) ---
@@ -363,7 +397,7 @@ function openTierList(tierListId) {
   align-items: center;
   justify-content: center;
 
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
   backdrop-filter: blur(4px);
 
   /* Die Maus soll die Seite darunter "durchgreifen" können, damit der

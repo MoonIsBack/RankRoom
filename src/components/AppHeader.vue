@@ -60,7 +60,7 @@
         Gespeicherte Tierlists
       </button>
 
-      <button class="side-menu-item">
+      <button class="side-menu-item" @click="exportTierList">
         <span>
           <svg
             viewBox="0 0 24 24"
@@ -78,7 +78,7 @@
         Exportieren
       </button>
 
-      <button class="side-menu-item">
+      <button class="side-menu-item" @click="openJsonPicker">
         <span>
           <svg
             viewBox="0 0 24 24"
@@ -95,6 +95,15 @@
         </span>
         Importieren
       </button>
+
+      <!-- Unsichtbares Datei-Feld für den Import einer JSON-Tierlist -->
+      <input
+        ref="jsonInputRef"
+        type="file"
+        accept="application/json,.json"
+        class="hidden-file-input"
+        @change="handleJsonSelected"
+      />
 
       <button class="side-menu-item">
         <span>
@@ -127,10 +136,13 @@
 // das ausklappbare Seitenmenü (Hamburger-Menü) rechts.
 import { ref } from 'vue'
 
-const emit = defineEmits(['go-home', 'open-saved-lists', 'new-tier-list'])
+const emit = defineEmits(['go-home', 'open-saved-lists', 'new-tier-list', 'export', 'import-file'])
 
 // Steuert, ob das Seitenmenü (rechts eingeblendet) gerade offen ist
 const isMenuOpen = ref(false)
+
+// Referenz auf das versteckte Datei-Feld für den JSON-Import
+const jsonInputRef = ref(null)
 
 function openMenu() {
   isMenuOpen.value = true
@@ -151,9 +163,42 @@ function openNewTierList() {
   closeMenu()
   emit('new-tier-list')
 }
+
+// Export: Menü schließen und App.vue Bescheid geben (dort wird die JSON erzeugt)
+function exportTierList() {
+  closeMenu()
+  emit('export')
+}
+
+// Import: den versteckten Datei-Dialog öffnen
+function openJsonPicker() {
+  jsonInputRef.value.click()
+}
+
+// Wurde eine JSON-Datei gewählt, geben wir sie an App.vue weiter (dort wird
+// sie eingelesen und geprüft) und schließen das Menü.
+function handleJsonSelected(event) {
+  const file = event.target.files[0]
+
+  if (!file) {
+    return
+  }
+
+  emit('import-file', file)
+  closeMenu()
+
+  // Auswahl zurücksetzen, damit man dieselbe Datei danach erneut wählen kann
+  event.target.value = ''
+}
 </script>
 
 <style scoped>
+/* Das echte Datei-Feld für den Import bleibt unsichtbar, geöffnet wird es
+   nur per Klick auf den "Importieren"-Knopf */
+.hidden-file-input {
+  display: none;
+}
+
 .top-header {
   width: 100%;
   padding: 18px 28px 0;

@@ -90,6 +90,6 @@ defineEmits(['close'])
   color: white;
   font-weight: 800;
   cursor: pointer;
-  background: linear-gradient(135deg, #7f9cff, #8b5cf6);
+  background: var(--accent-gradient);
 }
 </style>

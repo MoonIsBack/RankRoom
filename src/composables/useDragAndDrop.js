@@ -87,7 +87,6 @@ export function useDragAndDrop(items, tiers) {
 
   return {
     draggedItem,
-    draggedFromTier,
     startDrag,
     startDragFromTier,
     dropItem,

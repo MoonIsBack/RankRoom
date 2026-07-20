@@ -103,7 +103,7 @@ function handleFilesSelected(event) {
   border-radius: 18px;
   padding: 18px 24px;
 
-  background: linear-gradient(135deg, #7f9cff, #8b5cf6);
+  background: var(--accent-gradient);
   color: white;
 
   font-size: 1rem;
@@ -118,7 +118,7 @@ function handleFilesSelected(event) {
 
 .image-picker-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 32px rgba(127, 156, 255, 0.28);
+  box-shadow: 0 14px 32px rgba(var(--accent-rgb), 0.28);
 }
 
 /* Das echte Datei-Feld bleibt komplett unsichtbar, wir nutzen nur den eigenen Button */
@@ -165,7 +165,7 @@ function handleFilesSelected(event) {
 }
 
 .text-add-row input[type='text']:focus {
-  border-color: rgba(127, 156, 255, 0.4);
+  border-color: rgba(var(--accent-rgb), 0.4);
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -191,7 +191,7 @@ function handleFilesSelected(event) {
 }
 
 .add-button:hover {
-  background: rgba(127, 156, 255, 0.25);
+  background: rgba(var(--accent-rgb), 0.25);
   transform: translateY(-1px);
 }
 

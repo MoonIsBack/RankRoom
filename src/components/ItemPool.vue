@@ -69,8 +69,8 @@ function handleDrop() {
 }
 
 .item-pool.is-drag-over {
-  background: rgba(127, 156, 255, 0.08);
-  border-color: rgba(127, 156, 255, 0.5);
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: rgba(var(--accent-rgb), 0.5);
 }
 
 .empty-hint {

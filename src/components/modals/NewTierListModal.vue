@@ -85,7 +85,7 @@ function createTierList() {
 }
 
 .name-input:focus {
-  border-color: rgba(167, 139, 250, 0.45);
+  border-color: rgba(var(--accent-rgb), 0.45);
   background: rgba(255, 255, 255, 0.075);
 }
 

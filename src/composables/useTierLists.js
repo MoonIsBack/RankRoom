@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { defaultTiers } from '../data/defaultTiers'
 import { loadTierLists, saveTierLists } from '../storage/tierListStorage'
+import { downloadTierListAsJson } from '../utils/exportTierList'
 
 export function useTierLists() {
   // Beim Start versuchen, gespeicherte Daten aus dem localStorage zu laden.
@@ -255,6 +256,38 @@ export function useTierLists() {
     activeTierListId.value = tierListId
   }
 
+  // Lädt die aktive Tierlist als JSON-Datei herunter (Export in Finder/Explorer)
+  function exportActiveTierList() {
+    downloadTierListAsJson(activeTierList.value)
+  }
+
+  // Fügt eine eingelesene Tierlist (aus einer JSON-Datei) als neue Liste hinzu
+  // und macht sie sofort aktiv. Alle ids werden hier frisch vergeben, damit es
+  // keine Kollision mit bereits vorhandenen Listen/Items gibt.
+  function importTierList(parsedTierList) {
+    const newTierList = {
+      id: Date.now().toString(),
+      name: parsedTierList.name,
+      items: parsedTierList.items.map((item) => ({
+        id: crypto.randomUUID(),
+        name: item.name,
+        image: item.image,
+      })),
+      tiers: parsedTierList.tiers.map((tier) => ({
+        name: tier.name,
+        color: tier.color,
+        items: tier.items.map((item) => ({
+          id: crypto.randomUUID(),
+          name: item.name,
+          image: item.image,
+        })),
+      })),
+    }
+
+    tierLists.value.push(newTierList)
+    activeTierListId.value = newTierList.id
+  }
+
   // Alles, was App.vue (oder andere Komponenten) von diesem Composable
   // benutzen dürfen, wird hier zurückgegeben
   return {
@@ -273,5 +306,7 @@ export function useTierLists() {
     confirmReset,
     deleteTierList,
     openTierList,
+    exportActiveTierList,
+    importTierList,
   }
 }
