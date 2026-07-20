@@ -48,8 +48,14 @@
         :name="item.name"
         :image="item.image"
         :show-delete="false"
-        :dimmed="draggedItem?.id === item.id"
-        :style="{ order: index * 2 }"
+        :dimmed="draggedItem?.id === item.id && !isSameZoneReorder"
+        :style="{
+          order: index * 2,
+          // display:none statt nur ausblenden: die übrigen Karten sollen
+          // beim Umsortieren live zu ihrer Endposition zusammenrutschen,
+          // nicht an ihrer alten Stelle mit einer Lücke stehen bleiben.
+          display: draggedItem?.id === item.id && isSameZoneReorder ? 'none' : undefined,
+        }"
         @pointer-down="$emit('pointer-down-item', { item, event: $event })"
       />
 
@@ -123,6 +129,14 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  // Zone, aus der das gezogene Item ursprünglich kommt: 'pool' oder die id
+  // einer Tier-Reihe. Wird gebraucht, um zwischen "Item wird innerhalb
+  // DIESER Reihe umsortiert" und "Item kommt von woanders" zu unterscheiden
+  // (siehe isSameZoneReorder unten).
+  draggedFromZone: {
+    type: String,
+    default: null,
+  },
   // Wo ein gezogenes Item gerade landen würde: { zone, index } oder null
   dropTarget: {
     type: Object,
@@ -169,6 +183,16 @@ function openSettings() {
 // App.vue/usePointerDrag.js), die Platzhalter-Karte unten kann sich also
 // blind auf dropTarget.index verlassen.
 const isDropZone = computed(() => props.dropTarget?.zone === props.tierId)
+
+// Wird das gezogene Item gerade INNERHALB dieser Reihe umsortiert (nicht in
+// eine andere Reihe/den Pool verschoben)? Dann zeigt die Platzhalter-Karte
+// schon genau, wohin es kommt — die alte, ausgegraute Original-Karte an
+// ihrer bisherigen Stelle wäre dann nur eine verwirrende zweite Anzeige
+// derselben Karte und wird komplett ausgeblendet statt nur gedimmt. Zieht
+// man das Item dagegen in eine ANDERE Reihe, bleibt die alte Stelle hier
+// ausgegraut sichtbar — das ist dort weiterhin hilfreich (zeigt "kommt von
+// hier"), ohne mit einer Platzhalter-Karte in derselben Reihe zu kollidieren.
+const isSameZoneReorder = computed(() => props.draggedFromZone === props.tierId && isDropZone.value)
 </script>
 
 <style scoped>

@@ -38,6 +38,7 @@
           :items="tier.items"
           :row-index="index"
           :dragged-item="draggedItem"
+          :dragged-from-zone="draggedFromZone"
           :drop-target="dropTarget"
           :dragged-row-index="draggedRowIndex"
           :row-drop-index="rowDropIndex"
@@ -232,10 +233,8 @@ const {
 // draggedItem/dropTarget werden an Pool und Tier-Reihen weitergereicht, damit
 // sie beim Drüberziehen eine Vorschau anzeigen können; pointerPosition steuert
 // die schwebende Karte weiter unten im Template (Teleport).
-const { draggedItem, pointerPosition, dropTarget, startPointerDrag, resetDrag } = usePointerDrag(
-  items,
-  tiers,
-)
+const { draggedItem, draggedFromZone, pointerPosition, dropTarget, startPointerDrag, resetDrag } =
+  usePointerDrag(items, tiers)
 
 // Eigenständiges zweites Drag-System nur fürs Umsortieren der Tier-Reihen
 // selbst (siehe useRowPointerDrag.js für die Begründung der Trennung)

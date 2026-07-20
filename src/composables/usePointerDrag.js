@@ -23,6 +23,10 @@ import { createAutoScroll } from './useAutoScroll'
 const MOUSE_ARM_DISTANCE = 6
 const TOUCH_ARM_DISTANCE = 8
 
+// Innerhalb dieses Radius' (in Pixel) um den Greifpunkt wird noch keine
+// Platzhalter-Vorschau gezeigt (siehe updateDropTarget)
+const ORIGIN_SUPPRESS_DISTANCE = 20
+
 export function usePointerDrag(items, tiers) {
   // Das gerade gezogene Item, oder null. Ist NUR gesetzt, wenn der Drag
   // wirklich "scharf" ist (siehe Schwellwerte oben) — ein einfacher Klick/Tap
@@ -45,10 +49,10 @@ export function usePointerDrag(items, tiers) {
   let lastClientY = 0
   let pendingItem = null
   let pendingFromZone = null
-  // Position der gezogenen Karte in ihrer Ursprungs-Zone beim Start des Drags
-  // (siehe updateDropTarget: verhindert, dass sofort beim Anfassen einer
-  // Karte eine Platzhalter-Vorschau direkt daneben erscheint)
-  let originIndex = -1
+  // Schnappschuss der Kartenpositionen in der URSPRUNGS-Zone, genommen im
+  // Moment des Scharfschaltens (Map von item-id auf Rect) — siehe
+  // computeInsertIndexFromSnapshot weiter unten für die Begründung.
+  let originRectsSnapshot = null
 
   // Läuft während eines aktiven Drags nah am Bildschirmrand automatisch
   // weiter, damit man auch über den sichtbaren Bereich hinaus verschieben
@@ -74,9 +78,53 @@ export function usePointerDrag(items, tiers) {
     draggedItem.value = pendingItem
     draggedFromZone.value = pendingFromZone
     document.body.style.userSelect = 'none'
+    originRectsSnapshot = captureZoneRects(pendingFromZone)
+  }
 
-    const originItems = findZoneItems(pendingFromZone)
-    originIndex = originItems ? originItems.findIndex((entry) => entry.id === pendingItem.id) : -1
+  // Merkt sich die aktuellen Positionen aller Karten einer Zone. Wird nur
+  // für die URSPRUNGS-Zone gebraucht: Sobald man dort innerhalb derselben
+  // Reihe umsortiert, verschwindet die Original-Karte per display:none und
+  // die Nachbarkarten rutschen zusammen (siehe TierRow.vue) — würden wir
+  // die Positionen für die Zielberechnung dabei jedes Mal live neu messen,
+  // würde sich der Boden unter dem unbewegten Finger ständig verschieben:
+  // Platzhalter erscheint -> Karten rutschen zusammen -> an der (jetzt
+  // anderen) Zeiger-Position steht auf einmal eine andere Karte -> neue
+  // Zielposition -> Karten rutschen wieder um -> usw. Der Schnappschuss
+  // bleibt für die ganze Geste stabil und durchbricht dieses Hin-und-Her.
+  function captureZoneRects(zone) {
+    const zoneEl = [...document.querySelectorAll('[data-drop-zone]')].find(
+      (el) => el.dataset.dropZone === zone,
+    )
+
+    const snapshot = new Map()
+
+    if (!zoneEl) {
+      return snapshot
+    }
+
+    // Vertikal DOKUMENT-relativ speichern (Rect-Werte + aktuelle Scroll-
+    // Position), nicht fenster-relativ: Scrollt die Seite währenddessen
+    // (z. B. durch den Auto-Scroll beim Ziehen an den Bildschirmrand, siehe
+    // useAutoScroll.js), bliebe ein fenster-relativer Schnappschuss sonst an
+    // der alten Position "hängen", obwohl sich der Inhalt unter ihm bewegt
+    // hat. Beim Vergleich in computeInsertIndexFromSnapshot wird die
+    // Zeiger-Y-Position genauso umgerechnet, damit beide Seiten wieder
+    // zueinander passen.
+    zoneEl.querySelectorAll('[data-item-id]').forEach((el) => {
+      if (el.dataset.itemId !== '__placeholder__') {
+        const rect = el.getBoundingClientRect()
+        snapshot.set(el.dataset.itemId, {
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top + window.scrollY,
+          bottom: rect.bottom + window.scrollY,
+        })
+      }
+    })
+
+    return snapshot
   }
 
   // Wird beim Antippen/Klicken einer Karte aufgerufen (aus ItemCard, über
@@ -157,73 +205,186 @@ export function usePointerDrag(items, tiers) {
       return
     }
 
-    const index = computeInsertIndex(zoneEl, targetItems, x, y)
+    // Liegt der Zeiger noch sehr nah an der Stelle, an der die Karte
+    // gegriffen wurde, zeigen wir KEINE Platzhalter-Vorschau — sonst
+    // erscheint sofort beim Anfassen einer Karte ein "Geist" direkt daneben,
+    // obwohl man noch gar nicht wirklich irgendwohin zieht. Bewusst rein
+    // über die zurückgelegte Strecke entschieden (nicht darüber, ob die
+    // berechnete Zielposition "zufällig" der ursprünglichen entspricht) —
+    // sonst müsste man bei Nachbar-Positionen viel zu weit in die
+    // Nachbarkarte hineinziehen, bevor überhaupt etwas reagiert.
+    const distanceFromStart = Math.hypot(x - startX, y - startY)
 
-    // Würde die Karte dadurch exakt wieder an ihrer ursprünglichen Position
-    // landen (man hat gerade erst angefasst oder ist wieder dorthin zurück),
-    // zeigen wir KEINE Platzhalter-Vorschau — sonst erscheint sofort beim
-    // Anfassen einer Karte ein "Geist" direkt daneben, obwohl man noch gar
-    // nicht wirklich irgendwohin zieht.
-    if (zone === draggedFromZone.value && (index === originIndex || index === originIndex + 1)) {
+    if (zone === draggedFromZone.value && distanceFromStart < ORIGIN_SUPPRESS_DISTANCE) {
       dropTarget.value = null
       return
     }
 
+    // In der Ursprungs-Zone rechnen wir auf dem stabilen Schnappschuss
+    // (siehe captureZoneRects), in jeder anderen Zone live — dort verändert
+    // unser eigenes Dragging das Layout nicht, es besteht also nicht die
+    // Gefahr eines Rückkopplungs-Effekts.
+    const index =
+      zone === draggedFromZone.value
+        ? computeInsertIndexFromSnapshot(x, y, targetItems)
+        : computeInsertIndexLive(x, y, targetItems, zoneEl)
+
     dropTarget.value = { zone, index }
   }
 
-  // Bestimmt die Einfüge-Position nicht per pixelgenauer linker/rechter
-  // Kartenhälfte (das kippt bei jedem kleinen Zittern der Hand/des Fingers
-  // um und macht das Zielen mühsam), sondern anhand der Lücke zwischen zwei
-  // Karten, die dem Zeiger am nächsten ist. Jede mögliche Position bekommt
-  // dadurch einen spürbar größeren, robusteren Trefferbereich.
-  function computeInsertIndex(zoneEl, targetItems, x, y) {
+  // Wie breit (als Anteil der Kartenbreite) die "tote Zone" in der Mitte
+  // jeder Karte ist, in der die zuletzt getroffene Vor-/Nach-Entscheidung
+  // bestehen bleibt. Ohne sie würde die Zielposition bei jedem kleinen
+  // Zittern der Hand/des Fingers nahe der Kartenmitte umkippen.
+  const DEAD_ZONE_RATIO = 0.3
+
+  // Bestimmt die Vor-/Nach-Entscheidung für eine Karte an gegebener
+  // Position, inkl. toter Zone + Hysterese (Kern-Logik, von beiden
+  // computeInsertIndex*-Varianten unten genutzt)
+  function resolveSideOfCard(x, rect, cardIndex, zone) {
+    const relativeX = (x - rect.left) / rect.width
+
+    if (relativeX < 0.5 - DEAD_ZONE_RATIO / 2) {
+      return cardIndex
+    }
+
+    if (relativeX > 0.5 + DEAD_ZONE_RATIO / 2) {
+      return cardIndex + 1
+    }
+
+    const current = dropTarget.value
+
+    if (
+      current?.zone === zone &&
+      (current.index === cardIndex || current.index === cardIndex + 1)
+    ) {
+      return current.index
+    }
+
+    return relativeX < 0.5 ? cardIndex : cardIndex + 1
+  }
+
+  // Einfüge-Position INNERHALB der Ursprungs-Zone: rechnet ausschließlich
+  // mit dem stabilen Schnappschuss von armDrag() — keine einzige live
+  // gemessene Position —, damit das Ergebnis unabhängig davon ist, wie die
+  // Karten sich durch das Ausblenden der Original-Karte und die
+  // Platzhalter-Karte gerade visuell anordnen.
+  function computeInsertIndexFromSnapshot(x, y, targetItems) {
+    if (!originRectsSnapshot || originRectsSnapshot.size === 0) {
+      return 0
+    }
+
+    // Der Schnappschuss speichert die Y-Werte dokument-relativ (siehe
+    // captureZoneRects) — die eingehende Zeiger-Position genauso umrechnen
+    const docY = y + window.scrollY
+
+    let containingId = null
+    let nearestId = null
+    let nearestDistance = Infinity
+
+    for (const [id, rect] of originRectsSnapshot) {
+      if (x >= rect.left && x <= rect.right && docY >= rect.top && docY <= rect.bottom) {
+        containingId = id
+      }
+
+      const distance = Math.hypot(
+        x - (rect.left + rect.width / 2),
+        docY - (rect.top + rect.height / 2),
+      )
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestId = id
+      }
+    }
+
+    const matchedId = containingId ?? nearestId
+
+    if (!matchedId) {
+      return 0
+    }
+
+    const cardIndex = targetItems.findIndex((entry) => entry.id === matchedId)
+
+    if (cardIndex === -1) {
+      return targetItems.length
+    }
+
+    return resolveSideOfCard(
+      x,
+      originRectsSnapshot.get(matchedId),
+      cardIndex,
+      draggedFromZone.value,
+    )
+  }
+
+  // Einfüge-Position in JEDER ANDEREN Zone: rechnet live per Hit-Test
+  // (elementFromPoint — das behandelt umgebrochene Reihen automatisch
+  // richtig, weil es die tatsächliche visuelle Position nutzt). Unbedenklich
+  // live zu messen, weil unser eigenes Dragging das Layout dieser Zone
+  // nicht verändert (nur die Ursprungs-Zone bekommt die ausgeblendete
+  // Original-Karte).
+  function computeInsertIndexLive(x, y, targetItems, zoneEl) {
+    const hit = document.elementFromPoint(x, y)
+    let cardEl = hit ? hit.closest('[data-item-id]') : null
+
+    if (cardEl?.dataset.itemId === '__placeholder__') {
+      cardEl = null
+    }
+
+    // Kein direkter Treffer auf einer Karte (z. B. Innenabstand am Rand der
+    // Reihe, oder eine Lücke zwischen zwei Karten) -> die räumlich
+    // nächstgelegene Karte in dieser Zone suchen, statt pauschal ans Ende zu
+    // springen. Reine Punkt-zu-Karte-Distanz, keine Mittelung zwischen zwei
+    // Karten — das bleibt dadurch auch bei umgebrochenen (mehrzeiligen)
+    // Reihen korrekt.
+    if (!cardEl) {
+      cardEl = findNearestCard(zoneEl, x, y)
+    }
+
+    if (!cardEl) {
+      return 0
+    }
+
+    const cardIndex = targetItems.findIndex((entry) => entry.id === cardEl.dataset.itemId)
+
+    if (cardIndex === -1) {
+      return targetItems.length
+    }
+
+    return resolveSideOfCard(x, cardEl.getBoundingClientRect(), cardIndex, zoneEl.dataset.dropZone)
+  }
+
+  // Fallback für computeInsertIndexLive: die Karte, deren Mittelpunkt dem
+  // Zeiger am nächsten liegt (reine 2D-Distanz zu jeder einzelnen Karte,
+  // nicht gemittelt zwischen zwei Karten — bleibt dadurch auch bei
+  // umgebrochenen Reihen korrekt).
+  function findNearestCard(zoneEl, x, y) {
+    if (!zoneEl) {
+      return null
+    }
+
     const cardEls = [...zoneEl.querySelectorAll('[data-item-id]')].filter(
       (el) => el.dataset.itemId !== '__placeholder__',
     )
 
-    // Reihenfolge der DOM-Elemente an die Reihenfolge der Daten angleichen
-    const orderedRects = targetItems
-      .map((entry) => cardEls.find((el) => el.dataset.itemId === entry.id))
-      .filter(Boolean)
-      .map((el) => el.getBoundingClientRect())
+    let nearest = null
+    let nearestDistance = Infinity
 
-    if (orderedRects.length === 0) {
-      return 0
-    }
+    for (const el of cardEls) {
+      const rect = el.getBoundingClientRect()
+      const distance = Math.hypot(
+        x - (rect.left + rect.width / 2),
+        y - (rect.top + rect.height / 2),
+      )
 
-    // Für jede mögliche Position (vor der ersten Karte, zwischen je zwei,
-    // nach der letzten) einen Punkt in der Mitte der jeweiligen Lücke bilden
-    const gapPoints = [
-      { x: orderedRects[0].left, y: orderedRects[0].top + orderedRects[0].height / 2 },
-    ]
-
-    for (let i = 0; i < orderedRects.length - 1; i++) {
-      const a = orderedRects[i]
-      const b = orderedRects[i + 1]
-      gapPoints.push({
-        x: (a.right + b.left) / 2,
-        y: (a.top + a.height / 2 + b.top + b.height / 2) / 2,
-      })
-    }
-
-    const last = orderedRects[orderedRects.length - 1]
-    gapPoints.push({ x: last.right, y: last.top + last.height / 2 })
-
-    // Welche Lücke liegt dem Zeiger am nächsten?
-    let closestIndex = 0
-    let closestDistance = Infinity
-
-    gapPoints.forEach((point, index) => {
-      const distance = Math.hypot(x - point.x, y - point.y)
-
-      if (distance < closestDistance) {
-        closestDistance = distance
-        closestIndex = index
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearest = el
       }
-    })
+    }
 
-    return closestIndex
+    return nearest
   }
 
   function handlePointerUp(event) {
@@ -295,7 +456,7 @@ export function usePointerDrag(items, tiers) {
     activePointerId = null
     pendingItem = null
     pendingFromZone = null
-    originIndex = -1
+    originRectsSnapshot = null
 
     draggedItem.value = null
     draggedFromZone.value = null
@@ -310,6 +471,7 @@ export function usePointerDrag(items, tiers) {
 
   return {
     draggedItem,
+    draggedFromZone,
     pointerPosition,
     dropTarget,
     startPointerDrag,
