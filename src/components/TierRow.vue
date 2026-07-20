@@ -30,38 +30,38 @@
       dort — hier wird nur noch angezeigt, WAS gerade berechnet wurde.
     -->
     <div class="tier-content" :class="{ 'is-drag-over': isDropZone }" :data-drop-zone="tierId">
-      <template v-for="(item, index) in items" :key="item.id">
-        <Transition name="gap">
-          <ItemCard
-            v-if="showGapAt(index)"
-            item-id="__placeholder__"
-            :name="draggedItem?.name"
-            :image="draggedItem?.image"
-            :show-delete="false"
-            placeholder
-          />
-        </Transition>
+      <!--
+        Wichtig: NUR EINE Platzhalter-Karte pro Reihe, keine pro Index in der
+        Schleife — sonst legt Vue bei jedem Wechsel der Zielposition ein NEUES
+        Element an, während das alte noch da ist. Es bleibt ein einziges
+        Element, das sich per CSS "order" an die richtige Stelle bewegt.
+        Bewusst OHNE <Transition>: Wechselt man beim Ziehen schnell zwischen
+        Reihen, würde die Ausblend-Animation der verlassenen Reihe noch laufen,
+        während die neue Reihe ihre Platzhalter-Karte schon einblendet — dann
+        sieht man kurzzeitig mehrere gleichzeitig. Sofortiges Ein-/Ausblenden
+        macht das strukturell unmöglich.
+      -->
+      <ItemCard
+        v-for="(item, index) in items"
+        :key="item.id"
+        :item-id="item.id"
+        :name="item.name"
+        :image="item.image"
+        :show-delete="false"
+        :dimmed="draggedItem?.id === item.id"
+        :style="{ order: index * 2 }"
+        @pointer-down="$emit('pointer-down-item', { item, event: $event })"
+      />
 
-        <ItemCard
-          :item-id="item.id"
-          :name="item.name"
-          :image="item.image"
-          :show-delete="false"
-          :dimmed="draggedItem?.id === item.id"
-          @pointer-down="$emit('pointer-down-item', { item, event: $event })"
-        />
-      </template>
-
-      <Transition name="gap">
-        <ItemCard
-          v-if="showGapAt(items.length)"
-          item-id="__placeholder__"
-          :name="draggedItem?.name"
-          :image="draggedItem?.image"
-          :show-delete="false"
-          placeholder
-        />
-      </Transition>
+      <ItemCard
+        v-if="isDropZone"
+        item-id="__placeholder__"
+        :name="draggedItem?.name"
+        :image="draggedItem?.image"
+        :show-delete="false"
+        :style="{ order: dropTarget.index * 2 - 1 }"
+        placeholder
+      />
     </div>
 
     <button
@@ -165,14 +165,10 @@ function openSettings() {
 }
 
 // Wird die ganze Reihe optisch hervorgehoben, weil gerade ein Item hierher
-// gezogen wird?
+// gezogen wird? Ist das der Fall, ist dropTarget garantiert gesetzt (siehe
+// App.vue/usePointerDrag.js), die Platzhalter-Karte unten kann sich also
+// blind auf dropTarget.index verlassen.
 const isDropZone = computed(() => props.dropTarget?.zone === props.tierId)
-
-// Soll an dieser Stelle (vor Karte "index", oder nach der letzten bei
-// index === items.length) die Einfüge-Lücke angezeigt werden?
-function showGapAt(index) {
-  return props.dropTarget?.zone === props.tierId && props.dropTarget?.index === index
-}
 </script>
 
 <style scoped>
@@ -278,19 +274,6 @@ function showGapAt(index) {
 .tier-content.is-drag-over {
   background: rgba(var(--accent-rgb), 0.1);
   box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb), 0.45);
-}
-
-.gap-enter-active,
-.gap-leave-active {
-  transition:
-    opacity 0.12s ease,
-    transform 0.12s ease;
-}
-
-.gap-enter-from,
-.gap-leave-to {
-  opacity: 0;
-  transform: scale(0.85);
 }
 
 .row-settings-button {
