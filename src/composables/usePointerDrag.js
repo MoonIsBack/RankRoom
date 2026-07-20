@@ -45,6 +45,10 @@ export function usePointerDrag(items, tiers) {
   let lastClientY = 0
   let pendingItem = null
   let pendingFromZone = null
+  // Position der gezogenen Karte in ihrer Ursprungs-Zone beim Start des Drags
+  // (siehe updateDropTarget: verhindert, dass sofort beim Anfassen einer
+  // Karte eine Platzhalter-Vorschau direkt daneben erscheint)
+  let originIndex = -1
 
   // Läuft während eines aktiven Drags nah am Bildschirmrand automatisch
   // weiter, damit man auch über den sichtbaren Bereich hinaus verschieben
@@ -70,6 +74,9 @@ export function usePointerDrag(items, tiers) {
     draggedItem.value = pendingItem
     draggedFromZone.value = pendingFromZone
     document.body.style.userSelect = 'none'
+
+    const originItems = findZoneItems(pendingFromZone)
+    originIndex = originItems ? originItems.findIndex((entry) => entry.id === pendingItem.id) : -1
   }
 
   // Wird beim Antippen/Klicken einer Karte aufgerufen (aus ItemCard, über
@@ -150,21 +157,73 @@ export function usePointerDrag(items, tiers) {
       return
     }
 
-    // Standard: ans Ende anhängen (leere Fläche innerhalb der Zone getroffen)
-    let index = targetItems.length
-    const cardEl = hit.closest('[data-item-id]')
+    const index = computeInsertIndex(zoneEl, targetItems, x, y)
 
-    if (cardEl) {
-      const cardIndex = targetItems.findIndex((entry) => entry.id === cardEl.dataset.itemId)
-
-      if (cardIndex !== -1) {
-        const rect = cardEl.getBoundingClientRect()
-        const isBeforeHalf = x < rect.left + rect.width / 2
-        index = cardIndex + (isBeforeHalf ? 0 : 1)
-      }
+    // Würde die Karte dadurch exakt wieder an ihrer ursprünglichen Position
+    // landen (man hat gerade erst angefasst oder ist wieder dorthin zurück),
+    // zeigen wir KEINE Platzhalter-Vorschau — sonst erscheint sofort beim
+    // Anfassen einer Karte ein "Geist" direkt daneben, obwohl man noch gar
+    // nicht wirklich irgendwohin zieht.
+    if (zone === draggedFromZone.value && (index === originIndex || index === originIndex + 1)) {
+      dropTarget.value = null
+      return
     }
 
     dropTarget.value = { zone, index }
+  }
+
+  // Bestimmt die Einfüge-Position nicht per pixelgenauer linker/rechter
+  // Kartenhälfte (das kippt bei jedem kleinen Zittern der Hand/des Fingers
+  // um und macht das Zielen mühsam), sondern anhand der Lücke zwischen zwei
+  // Karten, die dem Zeiger am nächsten ist. Jede mögliche Position bekommt
+  // dadurch einen spürbar größeren, robusteren Trefferbereich.
+  function computeInsertIndex(zoneEl, targetItems, x, y) {
+    const cardEls = [...zoneEl.querySelectorAll('[data-item-id]')].filter(
+      (el) => el.dataset.itemId !== '__placeholder__',
+    )
+
+    // Reihenfolge der DOM-Elemente an die Reihenfolge der Daten angleichen
+    const orderedRects = targetItems
+      .map((entry) => cardEls.find((el) => el.dataset.itemId === entry.id))
+      .filter(Boolean)
+      .map((el) => el.getBoundingClientRect())
+
+    if (orderedRects.length === 0) {
+      return 0
+    }
+
+    // Für jede mögliche Position (vor der ersten Karte, zwischen je zwei,
+    // nach der letzten) einen Punkt in der Mitte der jeweiligen Lücke bilden
+    const gapPoints = [
+      { x: orderedRects[0].left, y: orderedRects[0].top + orderedRects[0].height / 2 },
+    ]
+
+    for (let i = 0; i < orderedRects.length - 1; i++) {
+      const a = orderedRects[i]
+      const b = orderedRects[i + 1]
+      gapPoints.push({
+        x: (a.right + b.left) / 2,
+        y: (a.top + a.height / 2 + b.top + b.height / 2) / 2,
+      })
+    }
+
+    const last = orderedRects[orderedRects.length - 1]
+    gapPoints.push({ x: last.right, y: last.top + last.height / 2 })
+
+    // Welche Lücke liegt dem Zeiger am nächsten?
+    let closestIndex = 0
+    let closestDistance = Infinity
+
+    gapPoints.forEach((point, index) => {
+      const distance = Math.hypot(x - point.x, y - point.y)
+
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+
+    return closestIndex
   }
 
   function handlePointerUp(event) {
@@ -236,6 +295,7 @@ export function usePointerDrag(items, tiers) {
     activePointerId = null
     pendingItem = null
     pendingFromZone = null
+    originIndex = -1
 
     draggedItem.value = null
     draggedFromZone.value = null
