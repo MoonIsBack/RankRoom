@@ -268,8 +268,11 @@ export function usePointerDrag(items, tiers) {
   // Wie breit (als Anteil der Kartenbreite) die "tote Zone" in der Mitte
   // jeder Karte ist, in der die zuletzt getroffene Vor-/Nach-Entscheidung
   // bestehen bleibt. Ohne sie würde die Zielposition bei jedem kleinen
-  // Zittern der Hand/des Fingers nahe der Kartenmitte umkippen.
-  const DEAD_ZONE_RATIO = 0.3
+  // Zittern der Hand/des Fingers nahe der Kartenmitte umkippen. Bewusst
+  // sehr klein gehalten: der nötige Reiseweg bis zum nächsten Wechsel ist
+  // (0.5 + DEAD_ZONE_RATIO/2) der Kartenbreite — mehr als ein winziger
+  // Puffer um die exakte Mitte machte das Ziehen spürbar träge/weit.
+  const DEAD_ZONE_RATIO = 0.06
 
   // Bestimmt die Vor-/Nach-Entscheidung für eine Karte an gegebener
   // Position, inkl. toter Zone + Hysterese (Kern-Logik, von beiden
