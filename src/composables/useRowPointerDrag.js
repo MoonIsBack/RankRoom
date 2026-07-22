@@ -15,6 +15,7 @@
 import { ref } from 'vue'
 
 import { createAutoScroll } from './useAutoScroll'
+import { restoreTextSelection, suppressTextSelection } from './useTextSelection'
 
 const MOUSE_ARM_DISTANCE = 6
 const TOUCH_ARM_DISTANCE = 8
@@ -35,7 +36,7 @@ export function useRowPointerDrag(tiers) {
 
   function armDrag() {
     draggedRowIndex.value = pendingIndex
-    document.body.style.userSelect = 'none'
+    suppressTextSelection()
   }
 
   // Wird beim Antippen/Klicken des Handles aufgerufen. Startet noch keinen
@@ -144,7 +145,7 @@ export function useRowPointerDrag(tiers) {
     window.removeEventListener('pointerup', handlePointerUp)
     window.removeEventListener('pointercancel', handlePointerCancel)
     autoScroll.stop()
-    document.body.style.userSelect = ''
+    restoreTextSelection()
 
     activePointerId = null
     pendingIndex = null

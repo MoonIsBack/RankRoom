@@ -276,6 +276,13 @@ const isSameZoneReorder = computed(() => props.draggedFromZone === props.tierId 
   font-size: 26px;
   font-weight: 900;
   letter-spacing: -0.02em;
+
+  /* Der Buchstabe ist reine Anzeige — umbenannt wird über das Zahnrad, nie
+     hier direkt. Ohne user-select markiert der Browser ihn beim Ziehen einer
+     Reihe blau, weil er die Bewegung für ein Markieren von Text hält. Das
+     -webkit- davor braucht Safari, sonst passiert es dort weiterhin. */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .tier-content {

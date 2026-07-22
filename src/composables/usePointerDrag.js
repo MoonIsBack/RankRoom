@@ -17,6 +17,7 @@
 import { reactive, ref } from 'vue'
 
 import { createAutoScroll } from './useAutoScroll'
+import { restoreTextSelection, suppressTextSelection } from './useTextSelection'
 
 // Ab wie viel Bewegung (in Pixel) ein Drag "scharf" geschaltet wird. Bei
 // Touch etwas großzügiger, weil Finger weniger präzise sind als eine Maus.
@@ -100,12 +101,12 @@ export function usePointerDrag(items, tiers) {
   }
 
   // Schaltet den Drag "scharf": ab jetzt gilt es als echtes Ziehen, nicht mehr
-  // als potenzieller Klick/Tap. user-select:none verhindert, dass beim
-  // Ziehen mit der Maus aus Versehen Text auf der Seite markiert wird.
+  // als potenzieller Klick/Tap. suppressTextSelection verhindert, dass der
+  // Browser die Zieh-Bewegung als Text-Markieren missversteht.
   function armDrag() {
     draggedItem.value = pendingItem
     draggedFromZone.value = pendingFromZone
-    document.body.style.userSelect = 'none'
+    suppressTextSelection()
     layoutSnapshot = captureLayout()
   }
 
@@ -624,7 +625,7 @@ export function usePointerDrag(items, tiers) {
     window.removeEventListener('pointerup', handlePointerUp)
     window.removeEventListener('pointercancel', handlePointerCancel)
     autoScroll.stop()
-    document.body.style.userSelect = ''
+    restoreTextSelection()
 
     activePointerId = null
     pendingItem = null
