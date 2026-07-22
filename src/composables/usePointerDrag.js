@@ -27,6 +27,18 @@ const TOUCH_ARM_DISTANCE = 8
 // Platzhalter-Vorschau gezeigt (siehe updateDropTarget)
 const ORIGIN_SUPPRESS_DISTANCE = 20
 
+// Ab wie viel Gegenbewegung (in Pixel) die erkannte Zieh-Richtung umschlägt.
+// Klein genug, um echte Richtungswechsel sofort mitzubekommen, groß genug,
+// dass Hand-/Finger-Zittern die Richtung nicht ständig umkippen lässt.
+const DIRECTION_FLIP_DISTANCE = 8
+
+// Wie weit (als Anteil der Kartenbreite) der Wechselpunkt IN Zieh-Richtung
+// vorverlegt wird. Ohne das läge er exakt auf der Kartenmitte — man müsste
+// also immer bis über die Mitte der Nachbarkarte ziehen, bevor der neue
+// Platz erscheint. Mit 0.3 kippt die Vorschau schon nach rund einem Fünftel
+// der Nachbarkarte um, fühlt sich also deutlich direkter an.
+const DIRECTION_LEAD_RATIO = 0.3
+
 export function usePointerDrag(items, tiers) {
   // Das gerade gezogene Item, oder null. Ist NUR gesetzt, wenn der Drag
   // wirklich "scharf" ist (siehe Schwellwerte oben) — ein einfacher Klick/Tap
@@ -57,6 +69,11 @@ export function usePointerDrag(items, tiers) {
   // verhindert wiederholtes Neu-Einfangen, solange sich die Zielposition
   // nicht wirklich ändert.
   let lastRecapturedIndex = null
+  // Zuletzt erkannte horizontale Zieh-Richtung (-1 = nach links, 1 = nach
+  // rechts, 0 = noch keine) und der Bezugspunkt, gegen den die nächste
+  // Richtungsänderung gemessen wird — siehe updateHorizontalDirection.
+  let horizontalDirection = 0
+  let directionAnchorX = 0
 
   // Läuft während eines aktiven Drags nah am Bildschirmrand automatisch
   // weiter, damit man auch über den sichtbaren Bereich hinaus verschieben
@@ -159,6 +176,8 @@ export function usePointerDrag(items, tiers) {
     lastClientY = event.clientY
     pointerPosition.x = event.clientX
     pointerPosition.y = event.clientY
+    horizontalDirection = 0
+    directionAnchorX = event.clientX
     pendingItem = item
     pendingFromZone = fromZone
 
@@ -176,6 +195,7 @@ export function usePointerDrag(items, tiers) {
     lastClientY = event.clientY
     pointerPosition.x = event.clientX
     pointerPosition.y = event.clientY
+    updateHorizontalDirection(event.clientX)
 
     if (!draggedItem.value) {
       const distance = Math.hypot(event.clientX - startX, event.clientY - startY)
@@ -265,20 +285,52 @@ export function usePointerDrag(items, tiers) {
     }
   }
 
-  // Wie breit (als Anteil der Kartenbreite) die "tote Zone" in der Mitte
-  // jeder Karte ist, in der die zuletzt getroffene Vor-/Nach-Entscheidung
-  // bestehen bleibt. Ohne sie würde die Zielposition bei jedem kleinen
-  // Zittern der Hand/des Fingers nahe der Kartenmitte umkippen. Bewusst
-  // sehr klein gehalten: der nötige Reiseweg bis zum nächsten Wechsel ist
-  // (0.5 + DEAD_ZONE_RATIO/2) der Kartenbreite — mehr als ein winziger
-  // Puffer um die exakte Mitte machte das Ziehen spürbar träge/weit.
+  // Hält fest, ob gerade nach links oder rechts gezogen wird. Der Anker
+  // wandert mit der Bewegung mit, solange sie in dieselbe Richtung geht —
+  // umgeschlagen wird erst nach DIRECTION_FLIP_DISTANCE Gegenbewegung.
+  function updateHorizontalDirection(x) {
+    if (x > directionAnchorX + DIRECTION_FLIP_DISTANCE) {
+      horizontalDirection = 1
+      directionAnchorX = x
+      return
+    }
+
+    if (x < directionAnchorX - DIRECTION_FLIP_DISTANCE) {
+      horizontalDirection = -1
+      directionAnchorX = x
+      return
+    }
+
+    if (horizontalDirection === 1 && x > directionAnchorX) {
+      directionAnchorX = x
+    } else if (horizontalDirection === -1 && x < directionAnchorX) {
+      directionAnchorX = x
+    }
+  }
+
+  // Winziger Puffer um die Kartenmitte für den Fall, dass noch gar keine
+  // Richtung feststeht (rein senkrechte Bewegung) — dann greift wie früher
+  // die Hysterese über den zuletzt gewählten Index.
   const DEAD_ZONE_RATIO = 0.06
 
-  // Bestimmt die Vor-/Nach-Entscheidung für eine Karte an gegebener
-  // Position, inkl. toter Zone + Hysterese (Kern-Logik, von beiden
-  // computeInsertIndex*-Varianten unten genutzt)
+  // Bestimmt die Vor-/Nach-Entscheidung für eine Karte an gegebener Position.
+  //
+  // Kernidee: der Wechselpunkt liegt NICHT starr auf der Kartenmitte, sondern
+  // wird um DIRECTION_LEAD_RATIO in die aktuelle Zieh-Richtung vorverlegt.
+  // Zieht man nach rechts, kippt die Vorschau also schon deutlich vor der
+  // Mitte der Nachbarkarte um; zieht man nach links, entsprechend spiegelbildlich.
+  // Das ersetzt gleichzeitig die alte tote Zone: weil der Wechselpunkt beim
+  // Richtungswechsel auf die andere Seite der Mitte springt, muss man ein
+  // ordentliches Stück zurückziehen, damit sich die Entscheidung wieder
+  // dreht — Zittern kann sie nicht umkippen.
   function resolveSideOfCard(x, rect, cardIndex, zone) {
     const relativeX = (x - rect.left) / rect.width
+
+    if (horizontalDirection !== 0) {
+      const threshold = 0.5 - horizontalDirection * DIRECTION_LEAD_RATIO
+
+      return relativeX < threshold ? cardIndex : cardIndex + 1
+    }
 
     if (relativeX < 0.5 - DEAD_ZONE_RATIO / 2) {
       return cardIndex
@@ -494,6 +546,8 @@ export function usePointerDrag(items, tiers) {
     pendingFromZone = null
     originRectsSnapshot = null
     lastRecapturedIndex = null
+    horizontalDirection = 0
+    directionAnchorX = 0
 
     draggedItem.value = null
     draggedFromZone.value = null
