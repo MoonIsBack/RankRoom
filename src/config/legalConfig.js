@@ -29,7 +29,7 @@
 // erscheint nur mit vollständigen echten Angaben, der Kontakt nur mit echter
 // E-Mail-Adresse, und die Cookie-Einstellungen bleiben aus, solange es nichts
 // einzuwilligen gibt.
-export const previewMode = true
+export const previewMode = false
 
 // --- Was ist sichtbar? -------------------------------------------------------
 //
