@@ -294,13 +294,10 @@ function openTierList(tierListId) {
       <section class="control-panel">
         <AddItemForm @add-item="handleAddItem" @add-files="handleImageFiles" />
 
-        <button
-          type="button"
-          class="image-export-button"
-          title="Als Bild speichern"
-          aria-label="Als Bild speichern"
-          @click="openExportImageModal"
-        >
+        <!-- Hauptaktion des Bedienfelds: das fertige Ergebnis speichern.
+             Bewusst mit sichtbarer Beschriftung statt nur einem Symbol —
+             ein Tooltip ist auf dem Handy gar nicht zu sehen. -->
+        <button type="button" class="image-export-button" @click="openExportImageModal">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -313,6 +310,8 @@ function openTierList(tierListId) {
             <circle cx="9" cy="9" r="2" />
             <path d="M21 15l-5-5L5 21" />
           </svg>
+
+          Als Bild speichern
         </button>
 
         <button class="reset-button" @click="openResetModal">Zurücksetzen</button>
@@ -515,35 +514,46 @@ function openTierList(tierListId) {
 
 .image-export-button {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  padding: 18px 24px;
 
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: none;
   border-radius: 18px;
 
-  background: rgba(255, 255, 255, 0.055);
-  color: var(--text-secondary);
+  /* In der Akzentfarbe, weil das Speichern des fertigen Bildes die
+     eigentliche Belohnung ist — es soll der auffälligste Knopf hier sein.
+     Vorher war es ein graues Symbol ohne Text direkt neben dem gleich
+     grossen roten "Zurücksetzen"; die beiden waren leicht zu verwechseln. */
+  background: var(--accent-gradient);
+  color: white;
+
+  font-size: 1rem;
+  font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
 
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.12);
 
   transition:
     transform 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
 }
 
 .image-export-button svg {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 
 .image-export-button:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.09);
-  color: var(--text);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.18);
 }
 
 .reset-button {
@@ -581,7 +591,7 @@ function openTierList(tierListId) {
   }
 
   .image-export-button {
-    align-self: center;
+    width: 100%;
   }
 
   .reset-button {
