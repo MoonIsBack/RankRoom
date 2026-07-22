@@ -247,7 +247,11 @@ export function isTouchDevice() {
 // Die URL wird bewusst NICHT sofort wieder freigegeben: der neue Tab lädt
 // sie erst noch. Der Browser räumt sie beim Schließen der Seite selbst auf.
 export function openImageFile(file) {
-  window.open(URL.createObjectURL(file), '_blank')
+  // noopener: Der neue Tab bekommt keinen Zugriff auf das Fenster, aus dem er
+  // geöffnet wurde. Bei einer blob:-Adresse aus dem eigenen Gerät ist das
+  // ungefährlich, aber es ist die richtige Grundeinstellung für window.open —
+  // und kostet nichts.
+  window.open(URL.createObjectURL(file), '_blank', 'noopener')
 }
 
 // Öffnet das System-Teilen-Menü. Bricht der Nutzer ab, ist das kein Fehler.

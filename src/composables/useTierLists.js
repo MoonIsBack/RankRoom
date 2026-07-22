@@ -6,8 +6,14 @@ import { computed, ref, watch } from 'vue'
 
 import { createDefaultTiers } from '../data/defaultTiers'
 import { TIER_COLOR_PALETTE } from '../data/tierColors'
-import { loadTierLists, saveTierLists } from '../storage/tierListStorage'
+import { clearTierLists, loadTierLists, saveTierLists } from '../storage/tierListStorage'
 import { downloadTierListAsJson } from '../utils/exportTierList'
+import {
+  MAX_ITEMS_PER_LIST,
+  sanitizeItemName,
+  sanitizeTierListName,
+  sanitizeTierName,
+} from '../utils/validation'
 
 // Grenzen für die Anzahl der Tier-Reihen einer Tierlist: mindestens eine
 // Reihe muss immer übrig bleiben, mehr als 20 wird unübersichtlich.
@@ -25,7 +31,9 @@ const MAX_TIERS = 20
 function createTierList(name) {
   return {
     id: crypto.randomUUID(),
-    name,
+    // Auch hier über die zentrale Prüfung, damit ein sehr langer Name nicht
+    // später die Überschrift oder den Export-Dateinamen sprengt
+    name: sanitizeTierListName(name) || 'Neue Tierlist',
     items: [],
     tiers: createDefaultTiers(),
   }
@@ -38,8 +46,26 @@ function countRankedItems(tiers) {
 
 export function useTierLists() {
   // Beim Start versuchen, gespeicherte Daten aus dem localStorage zu laden.
-  // Ist noch nichts gespeichert (erster Besuch), ist savedData null.
-  const savedData = loadTierLists()
+  //
+  // loadTierLists() stürzt nie ab, sondern meldet zurück, was es vorgefunden
+  // hat: data ist null, wenn noch nichts gespeichert war ODER wenn dort etwas
+  // Beschädigtes lag. recovered unterscheidet die beiden Fälle — nur im
+  // zweiten hat der Nutzer wirklich etwas verloren und soll das erfahren.
+  const { data: savedData, recovered } = loadTierLists()
+
+  // Meldung über ein Speicherproblem, die App.vue als Hinweis-Popup anzeigt.
+  // null bedeutet: alles in Ordnung.
+  const storageNotice = ref(
+    recovered
+      ? {
+          title: 'Gespeicherte Daten konnten nicht gelesen werden',
+          text:
+            'Die im Browser gespeicherten Tierlisten waren beschädigt und wurden nicht ' +
+            'geladen. RankRoom startet deshalb mit einer leeren Liste. Die alten Daten ' +
+            'wurden nicht gelöscht — sie werden aber überschrieben, sobald du etwas änderst.',
+        }
+      : null,
+  )
 
   // Migration für älter gespeicherte Tierlisten: früher hatten Tier-Reihen
   // keine eigene id (sie wurden nur über ihren Namen erkannt). Da Reihen
@@ -79,7 +105,7 @@ export function useTierLists() {
       return activeTierList.value.name
     },
     set(newName) {
-      activeTierList.value.name = newName
+      activeTierList.value.name = sanitizeTierListName(newName) || activeTierList.value.name
     },
   })
 
@@ -136,7 +162,39 @@ export function useTierLists() {
   watch(
     [tierLists, activeTierListId],
     () => {
-      saveTierLists(activeTierListId.value, tierLists.value)
+      const result = saveTierLists(activeTierListId.value, tierLists.value)
+
+      if (result.ok) {
+        return
+      }
+
+      // Speichern fehlgeschlagen. Früher fiel das komplett unter den Tisch —
+      // die Änderung war auf dem Bildschirm zu sehen, aber nach dem nächsten
+      // Neuladen wieder weg. Jetzt erfährt der Nutzer davon.
+      //
+      // Nur die erste Meldung setzen: Bei vollem Speicher schlägt sonst jede
+      // weitere Änderung erneut fehl und würde das Popup endlos neu öffnen.
+      if (storageNotice.value) {
+        return
+      }
+
+      storageNotice.value =
+        result.reason === 'quota'
+          ? {
+              title: 'Speicher voll',
+              text:
+                'Der Browser-Speicher dieses Geräts ist voll — deine letzte Änderung konnte ' +
+                'nicht gesichert werden. Bilder brauchen dort besonders viel Platz. ' +
+                'Exportiere die Liste am besten als Datei und entferne dann einige Bilder.',
+            }
+          : {
+              title: 'Speichern nicht möglich',
+              text:
+                'RankRoom kann in diesem Browser nichts speichern. Das passiert zum Beispiel ' +
+                'im privaten Modus oder wenn das Speichern von Website-Daten gesperrt ist. ' +
+                'Du kannst weiterarbeiten, aber deine Listen sind nach dem Schließen weg — ' +
+                'exportiere sie vorher als Datei.',
+            }
     },
     { deep: true },
   )
@@ -145,15 +203,26 @@ export function useTierLists() {
   // Gibt die id des neuen Items zurück, damit App.vue es kurz hervorheben
   // kann (siehe useRecentlyAdded.js) — oder null, wenn nichts entstanden ist.
   function addItem(itemName) {
-    const trimmedName = itemName.trim()
+    const cleanName = sanitizeItemName(itemName)
 
-    if (!trimmedName) {
+    if (!cleanName) {
+      return null
+    }
+
+    if (totalItemCount.value >= MAX_ITEMS_PER_LIST) {
+      storageNotice.value = {
+        title: 'Liste ist voll',
+        text:
+          `Diese Tierlist enthält bereits ${MAX_ITEMS_PER_LIST} Items — mehr passen nicht ` +
+          'hinein. Lege am besten eine neue Tierlist an oder entferne nicht mehr benötigte Items.',
+      }
+
       return null
     }
 
     const newItem = {
       id: crypto.randomUUID(),
-      name: trimmedName,
+      name: cleanName,
       image: null,
     }
 
@@ -193,7 +262,11 @@ export function useTierLists() {
 
     const itemsToAdd = []
     const duplicateNames = []
+    const skippedForLimitNames = []
     const seenInThisBatch = new Set()
+
+    // Wie viele Items passen überhaupt noch in diese Tierlist?
+    let remainingCapacity = Math.max(0, MAX_ITEMS_PER_LIST - totalItemCount.value)
 
     newImageItems.forEach((entry) => {
       if (existingImages.has(entry.image) || seenInThisBatch.has(entry.image)) {
@@ -201,10 +274,18 @@ export function useTierLists() {
         return
       }
 
+      // Ist die Obergrenze erreicht, werden die restlichen Bilder übersprungen
+      // statt still verschluckt — der Nutzer bekommt sie im Hinweis-Popup genannt.
+      if (remainingCapacity === 0) {
+        skippedForLimitNames.push(entry.name)
+        return
+      }
+
+      remainingCapacity--
       seenInThisBatch.add(entry.image)
       itemsToAdd.push({
         id: crypto.randomUUID(),
-        name: entry.name,
+        name: sanitizeItemName(entry.name) || 'Bild',
         image: entry.image,
       })
     })
@@ -213,6 +294,7 @@ export function useTierLists() {
 
     return {
       duplicateNames,
+      skippedForLimitNames,
       // Für die kurze Hervorhebung der neuen Karten (siehe useRecentlyAdded.js)
       addedIds: itemsToAdd.map((item) => item.id),
     }
@@ -226,9 +308,9 @@ export function useTierLists() {
   // Benennt ein Item im Pool um (Stift-Button im ItemPool). Nützlich vor
   // allem bei Bildern, deren Name sonst einfach der Dateiname wäre.
   function renameItem(itemId, newName) {
-    const trimmedName = newName.trim()
+    const cleanName = sanitizeItemName(newName)
 
-    if (!trimmedName) {
+    if (!cleanName) {
       return
     }
 
@@ -238,7 +320,7 @@ export function useTierLists() {
       return
     }
 
-    item.name = trimmedName
+    item.name = cleanName
   }
 
   // Sucht eine Tier-Reihe der aktiven Tierlist. Wird von allen Funktionen
@@ -292,9 +374,9 @@ export function useTierLists() {
 
   // Benennt eine Tier-Reihe um (Reihen-Einstellungen-Popover)
   function renameTierRow(tierId, newName) {
-    const trimmedName = newName.trim()
+    const cleanName = sanitizeTierName(newName)
 
-    if (!trimmedName) {
+    if (!cleanName) {
       return
     }
 
@@ -304,7 +386,7 @@ export function useTierLists() {
       return
     }
 
-    tier.name = trimmedName
+    tier.name = cleanName
   }
 
   // Ändert die Farbe einer Tier-Reihe (Reihen-Einstellungen-Popover)
@@ -359,9 +441,9 @@ export function useTierLists() {
   // Tierlists"-Modal). Betrifft nicht nur die aktive Liste, deshalb wird
   // hier in tierLists gesucht statt über activeTierList zu gehen.
   function renameTierList(tierListId, newName) {
-    const trimmedName = newName.trim()
+    const cleanName = sanitizeTierListName(newName)
 
-    if (!trimmedName) {
+    if (!cleanName) {
       return
     }
 
@@ -371,7 +453,7 @@ export function useTierLists() {
       return
     }
 
-    tierList.name = trimmedName
+    tierList.name = cleanName
   }
 
   // Wechselt zu einer anderen gespeicherten Tierlist (Klick auf "Öffnen")
@@ -412,11 +494,34 @@ export function useTierLists() {
     activeTierListId.value = newTierList.id
   }
 
+  // Löscht ALLE von RankRoom auf diesem Gerät gespeicherten Daten und startet
+  // mit einer frischen, leeren Tierlist. Wird vom "Lokale Daten löschen"-Bereich
+  // im Footer benutzt.
+  //
+  // Wichtig: Hier werden nur Daten auf DIESEM Gerät gelöscht. RankRoom hat
+  // keinen Server, auf dem noch etwas liegen könnte.
+  function clearAllLocalData() {
+    clearTierLists()
+
+    const freshTierList = createTierList('RankRoom Default')
+
+    tierLists.value = [freshTierList]
+    activeTierListId.value = freshTierList.id
+  }
+
+  // Schließt das Hinweis-Popup zu Speicherproblemen wieder
+  function dismissStorageNotice() {
+    storageNotice.value = null
+  }
+
   // Alles, was App.vue (oder andere Komponenten) von diesem Composable
   // benutzen dürfen, wird hier zurückgegeben
   return {
     activeTierList,
     tierListName,
+    storageNotice,
+    dismissStorageNotice,
+    clearAllLocalData,
     items,
     tiers,
     rankedItemCount,

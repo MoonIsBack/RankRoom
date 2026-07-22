@@ -6,6 +6,8 @@
 import { ref } from 'vue'
 
 import AppHeader from './components/AppHeader.vue'
+import AppFooter from './components/AppFooter.vue'
+import PreviewBadge from './components/PreviewBadge.vue'
 import HeroSection from './components/HeroSection.vue'
 import TierRow from './components/TierRow.vue'
 import StatsGrid from './components/StatsGrid.vue'
@@ -18,7 +20,17 @@ import NewTierListModal from './components/modals/NewTierListModal.vue'
 import FileNoticeModal from './components/modals/FileNoticeModal.vue'
 import InfoModal from './components/modals/InfoModal.vue'
 import ExportImageModal from './components/modals/ExportImageModal.vue'
+import LocalDataModal from './components/modals/LocalDataModal.vue'
 
+// Rechtliche Seiten. Sie sind bewusst eigene Komponenten und keine langen
+// Textblöcke hier, damit App.vue nicht zur Textdatei wird.
+import PrivacyPolicy from './components/legal/PrivacyPolicy.vue'
+import ImprintInfo from './components/legal/ImprintInfo.vue'
+import TermsOfUse from './components/legal/TermsOfUse.vue'
+import ContactInfo from './components/legal/ContactInfo.vue'
+import CookieSettings from './components/legal/CookieSettings.vue'
+
+import { useLegalPages } from './composables/useLegalPages'
 import { useRecentlyAdded } from './composables/useRecentlyAdded'
 import { useRemovingItems } from './composables/useRemovingItems'
 import { useTierLists } from './composables/useTierLists'
@@ -54,10 +66,18 @@ const {
   renameTierList,
   exportActiveTierList,
   importTierList,
+  storageNotice,
+  dismissStorageNotice,
+  clearAllLocalData,
   createNewTierList: createTierListInStore,
   confirmReset: resetTierListInStore,
   openTierList: openTierListInStore,
 } = useTierLists()
+
+// Welche rechtliche Seite gerade offen ist, inklusive Anbindung an die
+// Adresszeile (#/datenschutz usw.). Die Liste der Footer-Links kommt fertig
+// gefiltert von hier — abgeschaltete Bereiche tauchen gar nicht erst auf.
+const { openPage, openLegalPage, closeLegalPage, availableLinks } = useLegalPages()
 
 // Hebt frisch hinzugefügte Items kurz hervor — egal ob per Name, Dateiauswahl
 // oder Bild-Drop entstanden. Bewusst getrennt vom Tierlisten-Zustand, damit
@@ -101,9 +121,14 @@ function handleAddItem(itemName) {
 // Schritt 2: gültige Bilder hinzufügen, dabei Duplikate herausfiltern.
 // Schritt 3: falls etwas übersprungen wurde, ein Hinweis-Popup zeigen.
 async function handleImageFiles(fileList) {
-  const { items: imageItems, rejectedFileNames } = await readImageFiles(fileList)
+  const {
+    items: imageItems,
+    rejectedFileNames,
+    oversizedFileNames,
+    ignoredFileNames,
+  } = await readImageFiles(fileList)
 
-  const { duplicateNames, addedIds } = addItemsFromImages(imageItems)
+  const { duplicateNames, skippedForLimitNames, addedIds } = addItemsFromImages(imageItems)
 
   markAsNew(addedIds)
 
@@ -116,10 +141,31 @@ async function handleImageFiles(fileList) {
     })
   }
 
+  if (oversizedFileNames.length > 0) {
+    groups.push({
+      heading: 'Diese Dateien sind zu groß und wurden übersprungen:',
+      files: oversizedFileNames,
+    })
+  }
+
+  if (ignoredFileNames.length > 0) {
+    groups.push({
+      heading: 'Es lassen sich nur 50 Bilder auf einmal hinzufügen — nicht verarbeitet wurden:',
+      files: ignoredFileNames,
+    })
+  }
+
   if (duplicateNames.length > 0) {
     groups.push({
       heading: 'Diese Bilder sind bereits in der Liste vorhanden:',
       files: duplicateNames,
+    })
+  }
+
+  if (skippedForLimitNames.length > 0) {
+    groups.push({
+      heading: 'Die Liste ist voll — diese Bilder passten nicht mehr hinein:',
+      files: skippedForLimitNames,
     })
   }
 
@@ -137,9 +183,23 @@ const showResetModal = ref(false)
 const showSavedListsModal = ref(false)
 const showNewTierListModal = ref(false)
 const showExportImageModal = ref(false)
+const showLocalDataModal = ref(false)
 
 function openExportImageModal() {
   showExportImageModal.value = true
+}
+
+// --- "Lokale Daten"-Bereich aus dem Footer ---
+function openLocalDataModal() {
+  showLocalDataModal.value = true
+}
+
+// Löscht alle auf diesem Gerät gespeicherten Tierlisten. Ein laufender Drag
+// wird dabei abgebrochen, weil die gezogene Karte danach nicht mehr existiert.
+function confirmClearLocalData() {
+  clearAllLocalData()
+  resetAllDrags()
+  showLocalDataModal.value = false
 }
 
 // Hinweis-Gruppen für das FileNoticeModal (übersprungene Bilder: falsches
@@ -353,12 +413,50 @@ function openTierList(tierListId) {
         :message="infoMessage.text"
         @close="infoMessage = null"
       />
+
+      <!-- Hinweis, wenn der Browser-Speicher nicht gelesen oder beschrieben
+           werden konnte (voll, beschädigt oder gesperrt). Früher fiel so etwas
+           komplett unter den Tisch. -->
+      <InfoModal
+        v-if="storageNotice"
+        :title="storageNotice.title"
+        :message="storageNotice.text"
+        @close="dismissStorageNotice"
+      />
+
       <ExportImageModal
         v-if="showExportImageModal"
         :tier-list="activeTierList"
         @close="showExportImageModal = false"
       />
+
+      <LocalDataModal
+        v-if="showLocalDataModal"
+        :list-count="savedLists.length"
+        :item-count="totalItemCount"
+        @close="showLocalDataModal = false"
+        @export="exportActiveTierList"
+        @confirm="confirmClearLocalData"
+      />
+
+      <!-- Rechtliche Seiten. Jede erscheint nur, wenn sie in legalConfig.js
+           freigeschaltet ist — darum kümmert sich useLegalPages.js, sowohl für
+           die Footer-Links als auch für den direkten Aufruf über die Adresse. -->
+      <PrivacyPolicy v-if="openPage === 'privacy'" @close="closeLegalPage" />
+      <ImprintInfo v-if="openPage === 'imprint'" @close="closeLegalPage" />
+      <TermsOfUse v-if="openPage === 'terms'" @close="closeLegalPage" />
+      <ContactInfo v-if="openPage === 'contact'" @close="closeLegalPage" />
+      <CookieSettings v-if="openPage === 'cookies'" @close="closeLegalPage" />
     </main>
+
+    <AppFooter
+      :links="availableLinks"
+      @open-page="openLegalPage"
+      @open-local-data="openLocalDataModal"
+    />
+
+    <!-- Nur sichtbar, solange previewMode in legalConfig.js an ist -->
+    <PreviewBadge />
 
     <!-- Schwebende Kopie der gerade gezogenen Karte, folgt Maus/Finger.
          Per Teleport an <body>, damit sie über allem anderen liegt. -->

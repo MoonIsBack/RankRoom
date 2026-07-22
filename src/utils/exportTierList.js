@@ -3,14 +3,16 @@
 //
 // Die JSON enthält ALLES, was die Tierlist ausmacht: den Namen, alle Items
 // (mit Wörtern UND Bildern) und alle Tier-Reihen mit ihren Items.
-import { EXPORT_FORMAT } from './tierListFormat'
+import { CURRENT_FORMAT_VERSION, EXPORT_FORMAT } from './tierListFormat'
 import { sanitizeFileBaseName } from './fileName'
 
 // Wandelt die übergebene Tierlist in JSON um und startet den Browser-Download.
 export function downloadTierListAsJson(tierList) {
   const payload = {
     format: EXPORT_FORMAT,
-    version: 1,
+    // Kommt aus tierListFormat.js, damit Export und Import beim Anheben der
+    // Version nicht auseinanderlaufen können
+    version: CURRENT_FORMAT_VERSION,
     tierList: {
       name: tierList.name,
       items: tierList.items,
