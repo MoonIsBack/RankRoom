@@ -12,7 +12,7 @@
     <!-- Stift-Button (Namen bearbeiten) und Löschen-Button (×) werden nur im
          Item-Pool angezeigt, nicht in den Tier-Reihen -->
     <button
-      v-if="showDelete"
+      v-if="showActions"
       class="edit-button"
       title="Namen bearbeiten"
       @pointerdown.stop
@@ -30,7 +30,7 @@
         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
       </svg>
     </button>
-    <button v-if="showDelete" class="delete-button" @pointerdown.stop @click="$emit('delete')">
+    <button v-if="showActions" class="delete-button" @pointerdown.stop @click="$emit('delete')">
       ×
     </button>
 
@@ -55,7 +55,7 @@
 <script setup>
 // Eine einzelne Item-Karte (z. B. "Waves"), die sowohl im Item-Pool
 // als auch in den Tier-Reihen (S, A, B, ...) verwendet wird.
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 const props = defineProps({
   // Eindeutige id des Items — wird als data-item-id fürs Drag-Hit-Testing
@@ -101,6 +101,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['delete', 'pointer-down', 'rename'])
+
+// Stift- und ×-Button gehören nur auf die "echte" Karte an ihrem Platz.
+// Die schwebende Kopie unter dem Finger und die gestrichelte Vorschau sind
+// reine Anzeige — dort würden die Buttons nur stören, weil sie ohnehin nicht
+// bedienbar sind (siehe handlePointerDown unten).
+const showActions = computed(() => props.showDelete && !props.floating && !props.placeholder)
 
 function handlePointerDown(event) {
   // Während der Name bearbeitet wird oder bei einer der Sonder-Varianten
