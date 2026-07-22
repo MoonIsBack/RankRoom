@@ -295,6 +295,13 @@ const isSameZoneReorder = computed(() => props.draggedFromZone === props.tierId 
   font-weight: 900;
   letter-spacing: -0.02em;
 
+  /* Wichtig für mehrzeilige Namen wie "Neue Reihe": justify-content zentriert
+     nur den Textblock als Ganzes. Bricht der Name auf zwei Zeilen um, füllt
+     dieser Block die volle Breite — und die Zeilen darin stehen dann ohne
+     text-align am linken Rand. Bei einbuchstabigen Namen wie "S" fällt das
+     nicht auf, weil dort nichts umbricht. */
+  text-align: center;
+
   /* Der Buchstabe ist reine Anzeige — umbenannt wird über das Zahnrad, nie
      hier direkt. Ohne user-select markiert der Browser ihn beim Ziehen einer
      Reihe blau, weil er die Bewegung für ein Markieren von Text hält. Das
