@@ -71,7 +71,7 @@
       </section>
 
       <section class="control-panel">
-        <AddItemForm @add-item="addItem" @add-files="handleImageFiles" />
+        <AddItemForm @add-item="handleAddItem" @add-files="handleImageFiles" />
 
         <button
           type="button"
@@ -101,6 +101,7 @@
         :items="items"
         :dragged-item="draggedItem"
         :drop-target="dropTarget"
+        :highlight-delay-for="highlightDelayFor"
         @delete-item="deleteItem"
         @pointer-down-item="({ item, event }) => startPointerDrag(event, item, 'pool')"
         @rename-item="renameItem"
@@ -192,6 +193,7 @@ import FileNoticeModal from './components/modals/FileNoticeModal.vue'
 import InfoModal from './components/modals/InfoModal.vue'
 import ExportImageModal from './components/modals/ExportImageModal.vue'
 
+import { useRecentlyAdded } from './composables/useRecentlyAdded'
 import { useTierLists } from './composables/useTierLists'
 import { usePointerDrag } from './composables/usePointerDrag'
 import { useRowPointerDrag } from './composables/useRowPointerDrag'
@@ -229,6 +231,11 @@ const {
   openTierList: openTierListInStore,
 } = useTierLists()
 
+// Hebt frisch hinzugefügte Items kurz hervor — egal ob per Name, Dateiauswahl
+// oder Bild-Drop entstanden. Bewusst getrennt vom Tierlisten-Zustand, damit
+// diese rein optische Information nie im Browser-Speicher landet.
+const { markAsNew, highlightDelayFor } = useRecentlyAdded()
+
 // Drag & Drop braucht Zugriff auf items/tiers der aktiven Tierlist von oben.
 // draggedItem/dropTarget werden an Pool und Tier-Reihen weitergereicht, damit
 // sie beim Drüberziehen eine Vorschau anzeigen können; pointerPosition steuert
@@ -252,10 +259,21 @@ function resetAllDrags() {
 // Schritt 1: Dateien einlesen und falsche Formate aussortieren.
 // Schritt 2: gültige Bilder hinzufügen, dabei Duplikate herausfiltern.
 // Schritt 3: falls etwas übersprungen wurde, ein Hinweis-Popup zeigen.
+// Fügt ein Item über das Namensfeld hinzu und hebt es kurz hervor
+function handleAddItem(itemName) {
+  const newId = addItem(itemName)
+
+  if (newId) {
+    markAsNew([newId])
+  }
+}
+
 async function handleImageFiles(fileList) {
   const { items: imageItems, rejectedFileNames } = await readImageFiles(fileList)
 
-  const { duplicateNames } = addItemsFromImages(imageItems)
+  const { duplicateNames, addedIds } = addItemsFromImages(imageItems)
+
+  markAsNew(addedIds)
 
   const groups = []
 

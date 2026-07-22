@@ -132,12 +132,14 @@ export function useTierLists() {
     { deep: true },
   )
 
-  // Neues Item zum Item-Pool hinzufügen (kommt aus dem AddItemForm)
+  // Neues Item zum Item-Pool hinzufügen (kommt aus dem AddItemForm).
+  // Gibt die id des neuen Items zurück, damit App.vue es kurz hervorheben
+  // kann (siehe useRecentlyAdded.js) — oder null, wenn nichts entstanden ist.
   function addItem(itemName) {
     const trimmedName = itemName.trim()
 
     if (!trimmedName) {
-      return
+      return null
     }
 
     const newItem = {
@@ -147,6 +149,8 @@ export function useTierLists() {
     }
 
     items.value.push(newItem)
+
+    return newItem.id
   }
 
   // Fügt mehrere Items auf einmal hinzu, jeweils mit einem Bild.
@@ -198,7 +202,12 @@ export function useTierLists() {
 
     items.value.push(...itemsToAdd)
 
-    return { addedCount: itemsToAdd.length, duplicateNames }
+    return {
+      addedCount: itemsToAdd.length,
+      duplicateNames,
+      // Für die kurze Hervorhebung der neuen Karten (siehe useRecentlyAdded.js)
+      addedIds: itemsToAdd.map((item) => item.id),
+    }
   }
 
   // Item komplett aus dem Pool entfernen (× -Button im ItemPool)

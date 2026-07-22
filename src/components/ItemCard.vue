@@ -5,7 +5,13 @@
        aus, damit man im Textfeld mit der Maus Text markieren kann. -->
   <div
     class="item-card"
-    :class="{ 'is-dimmed': dimmed, 'is-floating': floating, 'is-placeholder': placeholder }"
+    :class="{
+      'is-dimmed': dimmed,
+      'is-floating': floating,
+      'is-placeholder': placeholder,
+      'is-new': highlightDelay !== null,
+    }"
+    :style="highlightDelay !== null ? { '--new-delay': highlightDelay + 'ms' } : null"
     :data-item-id="itemId"
     @pointerdown="handlePointerDown"
   >
@@ -97,6 +103,14 @@ const props = defineProps({
   placeholder: {
     type: Boolean,
     default: false,
+  },
+  // Ist gesetzt (Zahl in Millisekunden), wenn dieses Item gerade frisch
+  // hinzugekommen ist — dann wird die Karte kurz grün hervorgehoben. Der Wert
+  // ist die Start-Verzögerung: kommen mehrere Bilder auf einmal, laufen sie
+  // dadurch versetzt nacheinander an. Siehe useRecentlyAdded.js.
+  highlightDelay: {
+    type: Number,
+    default: null,
   },
 })
 
@@ -231,6 +245,57 @@ function cancelEditing() {
 
 /* Schwebende Kopie, die während eines Drags dem Zeiger/Finger folgt
    (siehe Teleport in App.vue) */
+/* Kurze Hervorhebung frisch hinzugefügter Items (siehe useRecentlyAdded.js):
+   ein grüner Rahmen leuchtet auf und blendet weich aus. Bewusst OHNE
+   Größenänderung — die soll allein von card-place-in oben kommen.
+
+   Achtung, hier steckte ein fieser Fehler drin: "animation" ist eine
+   Kurzschreibweise, die die GANZE Liste ersetzt. Nennt man hier nur den
+   Rahmen, ist card-place-in für die Dauer der Hervorhebung abgeschaltet — und
+   sobald die Klasse nach 1,2 s wieder verschwindet, taucht es zurück in der
+   Liste auf und läuft ERNEUT. Genau das sah man am Ende: die Karte wurde
+   kurz klein und wieder groß. Deshalb steht card-place-in hier mit drin, an
+   derselben Stelle wie oben: dann bleibt es beim Entfernen der Klasse
+   unangetastet und wird nicht neu gestartet.
+
+   Die Verzögerung fürs versetzte Starten kommt über --new-delay und gilt
+   dadurch NUR für den Rahmen — card-place-in soll ja sofort laufen.
+
+   "backwards" sorgt dafür, dass der Rahmen während der Wartezeit schon grün
+   ist, statt erst am Ende der Wartezeit dorthin zu springen. */
+.item-card.is-new {
+  animation:
+    card-place-in 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    item-new-ring 1.2s cubic-bezier(0.4, 0, 0.2, 1) var(--new-delay, 0ms) backwards;
+}
+
+/* Der Schlagschatten der Karte (0 10px 24px ...) steht bewusst in JEDEM
+   Schritt mit drin, und der letzte Schritt endet exakt auf den normalen
+   Werten der Karte. Sonst verschwände der Schatten während der Animation und
+   die Karte würde am Ende sichtbar zurückspringen. */
+@keyframes item-new-ring {
+  0% {
+    border-color: rgba(52, 211, 153, 0.95);
+    box-shadow:
+      0 0 0 3px rgba(52, 211, 153, 0.35),
+      0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  35% {
+    border-color: rgba(52, 211, 153, 0.95);
+    box-shadow:
+      0 0 0 3px rgba(52, 211, 153, 0.3),
+      0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  100% {
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 0 0 3px rgba(52, 211, 153, 0),
+      0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+}
+
 .item-card.is-floating {
   position: fixed;
   top: 0;

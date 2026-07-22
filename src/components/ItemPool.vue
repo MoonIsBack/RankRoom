@@ -19,6 +19,13 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  // Funktion, die für eine item-id die Start-Verzögerung der "neu"-Animation
+  // liefert (oder null, wenn das Item nicht frisch hinzugekommen ist).
+  // Siehe useRecentlyAdded.js.
+  highlightDelayFor: {
+    type: Function,
+    default: () => null,
+  },
 })
 
 defineEmits(['delete-item', 'pointer-down-item', 'rename-item'])
@@ -41,6 +48,7 @@ const isDragOver = computed(() => props.dropTarget?.zone === 'pool')
       :name="item.name"
       :image="item.image"
       :dimmed="draggedItem?.id === item.id"
+      :highlight-delay="highlightDelayFor(item.id)"
       @delete="$emit('delete-item', item.id)"
       @pointer-down="$emit('pointer-down-item', { item, event: $event })"
       @rename="$emit('rename-item', item.id, $event)"
