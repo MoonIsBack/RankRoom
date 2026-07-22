@@ -1,10 +1,16 @@
 <script setup>
 // Popup zum Speichern der Tierlist als Bild — mit Vorschau und Formatwahl
 // (JPG als Standard, PNG optional), ähnlich wie ein "Exportieren als…"-Dialog.
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import BaseModal from './BaseModal.vue'
-import { renderTierListToCanvas, downloadTierListImage } from '../../utils/exportTierListImage'
+import {
+  canShareFile,
+  canvasToImageFile,
+  downloadImageFile,
+  renderTierListToCanvas,
+  shareImageFile,
+} from '../../utils/exportTierListImage'
 
 const props = defineProps({
   tierList: {
@@ -22,22 +28,52 @@ const previewUrl = ref('')
 // true, solange das Bild noch gezeichnet wird
 const isRendering = ref(true)
 
-// Das gezeichnete Canvas merken wir uns, um beim Download nicht neu rendern
+// Das gezeichnete Canvas merken wir uns, um beim Speichern nicht neu rendern
 // zu müssen (einfache Variable, muss nicht reaktiv sein).
 let renderedCanvas = null
+
+// Die fertige Bilddatei im gewählten Format. Wird schon VOR dem Antippen
+// erzeugt, weil das System-Teilen-Menü auf dem iPhone direkt aus dem Antippen
+// heraus geöffnet werden muss (siehe canvasToImageFile).
+const imageFile = ref(null)
+
+async function prepareFile() {
+  if (!renderedCanvas) {
+    return
+  }
+
+  imageFile.value = await canvasToImageFile(renderedCanvas, format.value, props.tierList.name)
+}
 
 onMounted(async () => {
   renderedCanvas = await renderTierListToCanvas(props.tierList)
   previewUrl.value = renderedCanvas.toDataURL('image/png')
   isRendering.value = false
+
+  await prepareFile()
 })
 
-function download() {
-  if (!renderedCanvas) {
+// Nach einem Formatwechsel muss die Datei neu erzeugt werden
+watch(format, prepareFile)
+
+// Auf Geräten mit System-Teilen-Menü (v. a. iPhone) heißt der Knopf "Teilen",
+// sonst "Herunterladen" — damit vorher klar ist, was passiert.
+const usesShareSheet = computed(() => canShareFile(imageFile.value))
+
+async function save() {
+  const file = imageFile.value
+
+  if (!file) {
     return
   }
 
-  downloadTierListImage(renderedCanvas, format.value, props.tierList.name)
+  // Teilen zuerst versuchen; klappt es nicht (z. B. weil das Gerät es doch
+  // ablehnt), bleibt der normale Download als Rückfalllösung.
+  if (canShareFile(file) && (await shareImageFile(file))) {
+    return
+  }
+
+  downloadImageFile(file)
 }
 </script>
 
@@ -64,8 +100,13 @@ function download() {
     <div class="modal-actions">
       <button type="button" class="cancel-button" @click="$emit('close')">Abbrechen</button>
 
-      <button type="button" class="download-button" :disabled="isRendering" @click="download">
-        Herunterladen
+      <button
+        type="button"
+        class="download-button"
+        :disabled="isRendering || !imageFile"
+        @click="save"
+      >
+        {{ usesShareSheet ? 'Teilen' : 'Herunterladen' }}
       </button>
     </div>
   </BaseModal>

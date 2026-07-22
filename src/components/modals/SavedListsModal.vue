@@ -1,7 +1,7 @@
 <script setup>
 // Zeigt alle gespeicherten Tierlisten an. Man kann eine Liste öffnen
 // (aktiv schalten) oder mit Bestätigung löschen.
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import BaseModal from './BaseModal.vue'
 
@@ -12,7 +12,7 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['close', 'open-list', 'delete-list'])
+const emit = defineEmits(['close', 'open-list', 'rename-list', 'delete-list'])
 
 // Speichert die id der Liste, für die gerade "Wirklich löschen?" angezeigt wird.
 // null bedeutet: aktuell wird keine Liste zum Löschen bestätigt.
@@ -22,6 +22,44 @@ function confirmDelete(listId) {
   // Erst hier, nach der Bestätigung, wird das Löschen an App.vue gemeldet
   emit('delete-list', listId)
   pendingDeleteId.value = null
+}
+
+// id der Liste, deren Name gerade bearbeitet wird (null = keine)
+const editingId = ref(null)
+// Der Text im Eingabefeld, solange bearbeitet wird
+const editedName = ref('')
+const editInputRef = ref(null)
+
+async function startEditing(list) {
+  editingId.value = list.id
+  editedName.value = list.name
+
+  // nextTick wartet, bis Vue das Eingabefeld eingefügt hat — erst danach
+  // lässt es sich fokussieren
+  await nextTick()
+  editInputRef.value?.[0]?.focus()
+  editInputRef.value?.[0]?.select()
+}
+
+function saveEditing() {
+  // Verhindert doppeltes Speichern, wenn sowohl Enter als auch danach
+  // "blur" (Fokus verlassen) ausgelöst werden
+  if (editingId.value === null) {
+    return
+  }
+
+  const listId = editingId.value
+  editingId.value = null
+
+  const trimmedName = editedName.value.trim()
+
+  if (trimmedName) {
+    emit('rename-list', listId, trimmedName)
+  }
+}
+
+function cancelEditing() {
+  editingId.value = null
 }
 </script>
 
@@ -50,6 +88,19 @@ function confirmDelete(listId) {
           </div>
         </template>
 
+        <!-- Umbenennen: das Eingabefeld ersetzt Name und Knöpfe -->
+        <template v-else-if="editingId === list.id">
+          <input
+            ref="editInputRef"
+            v-model="editedName"
+            class="rename-input"
+            aria-label="Listenname"
+            @keyup.enter="saveEditing"
+            @keyup.esc="cancelEditing"
+            @blur="saveEditing"
+          />
+        </template>
+
         <template v-else>
           <button class="saved-list-open" @click="$emit('open-list', list.id)">
             <div>
@@ -58,6 +109,21 @@ function confirmDelete(listId) {
             </div>
 
             <span>Öffnen</span>
+          </button>
+
+          <!-- Stift: Name der Liste ändern, ohne sie öffnen zu müssen -->
+          <button class="edit-button" aria-label="Liste umbenennen" @click="startEditing(list)">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
           </button>
 
           <!-- Klick setzt nur pendingDeleteId, löscht aber noch nichts
@@ -161,6 +227,57 @@ function confirmDelete(listId) {
   font-size: 0.85rem;
   font-weight: 900;
   white-space: nowrap;
+}
+
+/* Stift-Button: gleiche Größe und Form wie der Löschen-Button daneben,
+   nur zurückhaltend statt rot — er ist die harmlosere der beiden Aktionen. */
+.edit-button {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-secondary);
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.edit-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.edit-button:hover {
+  background: rgba(255, 255, 255, 0.11);
+  transform: translateY(-1px);
+}
+
+/* Eingabefeld beim Umbenennen — nimmt die Stelle von Name und Knöpfen ein */
+.rename-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.075);
+  color: white;
+
+  font-size: 0.95rem;
+  font-weight: 800;
+  outline: none;
 }
 
 .delete-button {

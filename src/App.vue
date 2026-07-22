@@ -51,6 +51,7 @@ const {
   renameTierRow,
   changeTierColor,
   deleteTierList,
+  renameTierList,
   exportActiveTierList,
   importTierList,
   createNewTierList: createTierListInStore,
@@ -334,6 +335,7 @@ function openTierList(tierListId) {
         :saved-lists="savedLists"
         @close="closeSavedListsModal"
         @open-list="openTierList"
+        @rename-list="renameTierList"
         @delete-list="deleteTierList"
       />
       <NewTierListModal

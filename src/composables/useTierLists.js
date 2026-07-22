@@ -355,6 +355,25 @@ export function useTierLists() {
     }
   }
 
+  // Benennt eine gespeicherte Tierlist um (Stift-Button im "Gespeicherte
+  // Tierlists"-Modal). Betrifft nicht nur die aktive Liste, deshalb wird
+  // hier in tierLists gesucht statt über activeTierList zu gehen.
+  function renameTierList(tierListId, newName) {
+    const trimmedName = newName.trim()
+
+    if (!trimmedName) {
+      return
+    }
+
+    const tierList = tierLists.value.find((entry) => entry.id === tierListId)
+
+    if (!tierList) {
+      return
+    }
+
+    tierList.name = trimmedName
+  }
+
   // Wechselt zu einer anderen gespeicherten Tierlist (Klick auf "Öffnen")
   function openTierList(tierListId) {
     activeTierListId.value = tierListId
@@ -417,6 +436,7 @@ export function useTierLists() {
     createNewTierList,
     confirmReset,
     deleteTierList,
+    renameTierList,
     openTierList,
     exportActiveTierList,
     importTierList,

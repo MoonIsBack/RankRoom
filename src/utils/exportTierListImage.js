@@ -191,29 +191,71 @@ export async function renderTierListToCanvas(tierList) {
   return canvas
 }
 
-// Lädt das gezeichnete Canvas als Bilddatei herunter.
+// Macht aus dem gezeichneten Canvas eine fertige Bilddatei.
 // format ist "jpg" oder "png"; JPG braucht eine Qualitätsangabe (0..1).
-export function downloadTierListImage(canvas, format, name) {
+//
+// Absichtlich getrennt vom Weitergeben (siehe unten): auf dem iPhone muss
+// das Teilen-Menü direkt aus dem Antippen heraus geöffnet werden. Wäre das
+// Erzeugen der Datei noch dazwischen, hätte Safari den Tipp-Bezug schon
+// verloren und das Menü gar nicht erst geöffnet. Deshalb wird die Datei
+// vorher erzeugt und beim Antippen nur noch weitergereicht.
+export function canvasToImageFile(canvas, format, name) {
   const isPng = format === 'png'
   const mimeType = isPng ? 'image/png' : 'image/jpeg'
   const extension = isPng ? 'png' : 'jpg'
+  const fileName = `${sanitizeFileBaseName(name)}.${extension}`
 
-  canvas.toBlob(
-    (blob) => {
-      if (!blob) {
-        return
-      }
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => resolve(blob ? new File([blob], fileName, { type: mimeType }) : null),
+      mimeType,
+      isPng ? undefined : 0.92,
+    )
+  })
+}
 
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `${sanitizeFileBaseName(name)}.${extension}`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-    },
-    mimeType,
-    isPng ? undefined : 0.92,
-  )
+// Soll für diese Datei das System-Teilen-Menü genutzt werden?
+//
+// Auf dem Handy ja: dort öffnet sich das bekannte Teilen-Menü mit "Bild
+// sichern", das direkt in die Fotos-App speichert. Ein normaler Download
+// zeigt auf dem iPhone stattdessen nur eine graue Datei-Seite an, auf der
+// das Bild gar nicht zu sehen ist.
+//
+// Am Rechner NICHT: dort ist der Download in den Download-Ordner das
+// Erwartete. Die reine Abfrage navigator.canShare reicht dafür nicht —
+// Safari am Mac meldet ebenfalls, dass es Dateien teilen kann. Deshalb
+// zusätzlich die Zeigerart: "coarse" heißt Finger statt Mauszeiger, trifft
+// also genau die Geräte, bei denen das Teilen-Menü der bessere Weg ist.
+export function canShareFile(file) {
+  if (!file || !navigator.canShare?.({ files: [file] })) {
+    return false
+  }
+
+  return window.matchMedia?.('(pointer: coarse)').matches ?? false
+}
+
+// Öffnet das System-Teilen-Menü. Bricht der Nutzer ab, ist das kein Fehler.
+// Gibt zurück, ob das Teilen tatsächlich stattgefunden hat.
+export async function shareImageFile(file) {
+  try {
+    await navigator.share({ files: [file] })
+    return true
+  } catch (error) {
+    // AbortError = der Nutzer hat das Menü einfach wieder geschlossen
+    return error?.name === 'AbortError'
+  }
+}
+
+// Klassischer Download über einen unsichtbaren Link (Rechner, Android-Browser)
+export function downloadImageFile(file) {
+  const url = URL.createObjectURL(file)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = file.name
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+
+  URL.revokeObjectURL(url)
 }
