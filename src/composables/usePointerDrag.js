@@ -32,12 +32,17 @@ const ORIGIN_SUPPRESS_DISTANCE = 20
 // dass Hand-/Finger-Zittern die Richtung nicht ständig umkippen lässt.
 const DIRECTION_FLIP_DISTANCE = 8
 
-// Wie weit (als Anteil der Kartenbreite) der Wechselpunkt IN Zieh-Richtung
-// vorverlegt wird. Ohne das läge er exakt auf der Kartenmitte — man müsste
-// also immer bis über die Mitte der Nachbarkarte ziehen, bevor der neue
-// Platz erscheint. Mit 0.3 kippt die Vorschau schon nach rund einem Fünftel
-// der Nachbarkarte um, fühlt sich also deutlich direkter an.
-const DIRECTION_LEAD_RATIO = 0.3
+// Wie weit (als Anteil der Kartenbreite) man ÜBER die Mitte des Nachbarplatzes
+// hinausziehen muss, bevor die Vorschau dorthin umspringt. Wirkt in beide
+// Richtungen gleich, der nötige Weg ist also nach links und nach rechts
+// identisch: 0.5 + 0.2 = 0.7 Kartenbreiten ab dem Greifpunkt, danach eine
+// Kartenbreite pro weiterem Platz.
+//
+// Nebeneffekt und Grund, warum es überhaupt einen Widerstand gibt: beim
+// Richtungswechsel springt der Umschaltpunkt auf die andere Seite der Mitte.
+// Man muss also 2 x 0.2 Kartenbreiten zurückziehen, damit sich die
+// Entscheidung wieder dreht — Zittern kann sie nicht umkippen.
+const DIRECTION_RESISTANCE = 0.2
 
 // Wie weit (in Pixel) der Zeiger über den Rand der aktuell anvisierten Zone
 // hinaus muss, bevor eine ANDERE Zone übernimmt. Ohne diesen Puffer würde
@@ -161,6 +166,7 @@ export function usePointerDrag(items, tiers) {
       })
 
       snapshot.set(zoneEl.dataset.dropZone, {
+        el: zoneEl,
         rect: toDocRect(zoneEl.getBoundingClientRect()),
         slots,
       })
@@ -308,7 +314,9 @@ export function usePointerDrag(items, tiers) {
     const current = dropTarget.value?.zone
     const currentEntry = current ? layoutSnapshot.get(current) : null
 
-    if (currentEntry && containsPoint(currentEntry.rect, x, docY, ZONE_HYSTERESIS)) {
+    const currentBand = currentEntry ? grownRect(currentEntry) : null
+
+    if (currentBand && containsPoint(currentBand, x, docY, ZONE_HYSTERESIS)) {
       return current
     }
 
@@ -324,7 +332,7 @@ export function usePointerDrag(items, tiers) {
     // schlagartig verschwinden, obwohl man offensichtlich noch die Reihe
     // meint, auf deren Höhe man sich befindet. Deshalb zählt hier nur noch
     // die Höhe, nicht mehr die waagerechte Position.
-    if (currentEntry && withinVerticalBand(currentEntry.rect, docY, ZONE_HYSTERESIS)) {
+    if (currentBand && withinVerticalBand(currentBand, docY, ZONE_HYSTERESIS)) {
       return current
     }
 
@@ -335,6 +343,34 @@ export function usePointerDrag(items, tiers) {
     }
 
     return null
+  }
+
+  // Das eingefrorene Rechteck einer Zone, erweitert um das, was die Zone
+  // inzwischen tatsächlich einnimmt.
+  //
+  // Der eine Fall, in dem das Einfrieren allein nicht reicht: schiebt man eine
+  // Karte in eine Reihe, die bereits genau voll ist, bekommt diese Reihe durch
+  // den Platzhalter eine ZWEITE ZEILE und wird dadurch höher. Die neue Zeile
+  // liegt aber unterhalb des eingefrorenen Rechtecks — dort hätte nach den
+  // alten Werten schon die nächste Reihe angefangen. Man konnte die Karte
+  // deshalb nur in die obere Zeile legen, nicht in die neu entstandene.
+  //
+  // Gemessen wird nur für die Zone, die ohnehin schon anvisiert ist, und das
+  // Rechteck kann dadurch ausschließlich WACHSEN. Ein Aufschaukeln ist damit
+  // ausgeschlossen: die Messung kann die Zone nie wechseln, nur halten.
+  function grownRect(entry) {
+    if (!entry.el) {
+      return entry.rect
+    }
+
+    const live = toDocRect(entry.el.getBoundingClientRect())
+
+    return {
+      left: Math.min(entry.rect.left, live.left),
+      right: Math.max(entry.rect.right, live.right),
+      top: Math.min(entry.rect.top, live.top),
+      bottom: Math.max(entry.rect.bottom, live.bottom),
+    }
   }
 
   function containsPoint(rect, x, docY, margin) {
@@ -370,49 +406,10 @@ export function usePointerDrag(items, tiers) {
     }
   }
 
-  // Winziger Puffer um die Kartenmitte für den Fall, dass noch gar keine
-  // Richtung feststeht (rein senkrechte Bewegung) — dann greift wie früher
-  // die Hysterese über den zuletzt gewählten Index.
+  // Winziger Puffer für den Fall, dass noch gar keine Zieh-Richtung feststeht
+  // (rein senkrechte Bewegung) — dann bleibt die zuletzt getroffene Wahl
+  // bestehen, statt bei Zittern zu würfeln.
   const DEAD_ZONE_RATIO = 0.06
-
-  // Auf welchen PLATZ zeigt der Zeiger, wenn er über dem Platz mit dem
-  // gegebenen Rechteck steht — auf diesen oder schon auf den danach?
-  //
-  // Kernidee: der Wechselpunkt liegt NICHT starr in der Platzmitte, sondern
-  // wird um DIRECTION_LEAD_RATIO in die aktuelle Zieh-Richtung vorverlegt.
-  // Zieht man nach rechts, kippt die Vorschau also schon deutlich vor der
-  // Mitte des Nachbarplatzes um; zieht man nach links, spiegelbildlich.
-  // Das ersetzt gleichzeitig die alte tote Zone: weil der Wechselpunkt beim
-  // Richtungswechsel auf die andere Seite der Mitte springt, muss man ein
-  // ordentliches Stück zurückziehen, damit sich die Entscheidung wieder
-  // dreht — Zittern kann sie nicht umkippen.
-  function resolveSlotSide(x, rect, slotIndex, zone) {
-    const relativeX = (x - rect.left) / rect.width
-
-    if (horizontalDirection !== 0) {
-      const threshold = 0.5 - horizontalDirection * DIRECTION_LEAD_RATIO
-
-      return relativeX < threshold ? slotIndex : slotIndex + 1
-    }
-
-    if (relativeX < 0.5 - DEAD_ZONE_RATIO / 2) {
-      return slotIndex
-    }
-
-    if (relativeX > 0.5 + DEAD_ZONE_RATIO / 2) {
-      return slotIndex + 1
-    }
-
-    // Noch genau in der Mitte und ohne erkannte Richtung: bei der zuletzt
-    // getroffenen Entscheidung bleiben, statt zu würfeln.
-    const current = dropTarget.value
-
-    if (current?.zone === zone && (current.slot === slotIndex || current.slot === slotIndex + 1)) {
-      return current.slot
-    }
-
-    return relativeX < 0.5 ? slotIndex : slotIndex + 1
-  }
 
   // Auf welchem PLATZ der Reihe soll die Platzhalter-Karte erscheinen?
   //
@@ -442,6 +439,15 @@ export function usePointerDrag(items, tiers) {
       }
     })
 
+    // Zeiger UNTERHALB aller vorhandenen Plätze: das ist die Zeile, die durch
+    // die neue Karte überhaupt erst entsteht. Dann ans Ende anhängen — genau
+    // dadurch entsteht sie. Ohne diesen Fall würde stattdessen der räumlich
+    // nächste Platz in der letzten vorhandenen Zeile gewählt, und man käme
+    // nie in die neue Zeile hinein.
+    if (sameLine.length === 0 && docY > Math.max(...entry.slots.map((rect) => rect.bottom))) {
+      return entry.slots.length
+    }
+
     const candidates =
       sameLine.length > 0 ? sameLine : entry.slots.map((rect, slotIndex) => [slotIndex, rect])
 
@@ -449,13 +455,23 @@ export function usePointerDrag(items, tiers) {
     let matchedRect = null
     let bestDistance = Infinity
 
+    // Der Zeiger wird GEGEN die Zieh-Richtung verschoben, bevor gesucht wird.
+    // Dadurch muss man ein Stück über die Mitte des Nachbarplatzes hinaus,
+    // bevor umgeschaltet wird — und zwar nach links und nach rechts exakt
+    // gleich weit. Genau daran hakte eine frühere Fassung: die entschied
+    // "vor oder hinter dem nächsten Platz", und weil der Finger beim Anfassen
+    // schon in der Mitte eines Platzes sitzt, sprang die Vorschau nach rechts
+    // sofort um, nach links dagegen erst nach einem Dreiviertel-Kartenweg.
+    const slotWidth = entry.slots[0].width
+    const probeX = x - horizontalDirection * DIRECTION_RESISTANCE * slotWidth
+
     for (const [slotIndex, rect] of candidates) {
       // Innerhalb einer Zeile zählt nur der waagerechte Abstand, sonst der
       // echte 2D-Abstand zur Platzmitte.
       const distance =
         sameLine.length > 0
-          ? Math.abs(x - (rect.left + rect.width / 2))
-          : Math.hypot(x - (rect.left + rect.width / 2), docY - (rect.top + rect.height / 2))
+          ? Math.abs(probeX - (rect.left + rect.width / 2))
+          : Math.hypot(probeX - (rect.left + rect.width / 2), docY - (rect.top + rect.height / 2))
 
       if (distance < bestDistance) {
         bestDistance = distance
@@ -468,7 +484,36 @@ export function usePointerDrag(items, tiers) {
       return 0
     }
 
-    const slot = resolveSlotSide(x, matchedRect, matchedIndex, zone)
+    // Steht noch keine Richtung fest, bei der zuletzt getroffenen Wahl bleiben,
+    // solange sie fast genauso nah liegt — sonst kippt sie bei Zittern.
+    if (horizontalDirection === 0) {
+      const current = dropTarget.value
+
+      if (current?.zone === zone && current.slot !== matchedIndex) {
+        const currentRect = entry.slots[current.slot]
+
+        if (
+          currentRect &&
+          Math.abs(probeX - (currentRect.left + currentRect.width / 2)) <=
+            bestDistance + DEAD_ZONE_RATIO * slotWidth
+        ) {
+          matchedIndex = current.slot
+          matchedRect = currentRect
+        }
+      }
+    }
+
+    // Der Zeiger liegt hinter dem LETZTEN Platz einer Zeile — dann dahinter
+    // einfügen. Bewusst nur für den letzten Platz: zwischen zwei Karten liegt
+    // ein Abstand von ein paar Pixeln, in dem der Zeiger schon hinter der
+    // einen, aber noch nicht bei der nächsten Karte ist. Ohne diese
+    // Einschränkung würde dort verfrüht umgeschaltet — und zwar nur beim
+    // Ziehen nach rechts, was das Verhalten wieder unsymmetrisch machte.
+    const lastCandidateIndex = candidates[candidates.length - 1][0]
+    const slot =
+      matchedIndex === lastCandidateIndex && probeX > matchedRect.right
+        ? matchedIndex + 1
+        : matchedIndex
 
     if (sameLine.length === 0) {
       return slot
