@@ -26,6 +26,12 @@ const props = defineProps({
     type: Function,
     default: () => null,
   },
+  // Funktion, die sagt, ob ein Item gerade gelöscht wird und deshalb noch
+  // kurz ausblendet. Siehe useRemovingItems.js.
+  isRemoving: {
+    type: Function,
+    default: () => false,
+  },
 })
 
 defineEmits(['delete-item', 'pointer-down-item', 'rename-item'])
@@ -49,6 +55,7 @@ const isDragOver = computed(() => props.dropTarget?.zone === 'pool')
       :image="item.image"
       :dimmed="draggedItem?.id === item.id"
       :highlight-delay="highlightDelayFor(item.id)"
+      :removing="isRemoving(item.id)"
       @delete="$emit('delete-item', item.id)"
       @pointer-down="$emit('pointer-down-item', { item, event: $event })"
       @rename="$emit('rename-item', item.id, $event)"

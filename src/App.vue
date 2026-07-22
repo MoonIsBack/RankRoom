@@ -102,7 +102,8 @@
         :dragged-item="draggedItem"
         :drop-target="dropTarget"
         :highlight-delay-for="highlightDelayFor"
-        @delete-item="deleteItem"
+        :is-removing="isRemoving"
+        @delete-item="startRemoving"
         @pointer-down-item="({ item, event }) => startPointerDrag(event, item, 'pool')"
         @rename-item="renameItem"
       />
@@ -194,6 +195,7 @@ import InfoModal from './components/modals/InfoModal.vue'
 import ExportImageModal from './components/modals/ExportImageModal.vue'
 
 import { useRecentlyAdded } from './composables/useRecentlyAdded'
+import { useRemovingItems } from './composables/useRemovingItems'
 import { useTierLists } from './composables/useTierLists'
 import { usePointerDrag } from './composables/usePointerDrag'
 import { useRowPointerDrag } from './composables/useRowPointerDrag'
@@ -235,6 +237,10 @@ const {
 // oder Bild-Drop entstanden. Bewusst getrennt vom Tierlisten-Zustand, damit
 // diese rein optische Information nie im Browser-Speicher landet.
 const { markAsNew, highlightDelayFor } = useRecentlyAdded()
+
+// Lässt ein gelöschtes Item erst kurz rötlich verblassen, bevor es wirklich
+// aus den Daten fliegt (siehe useRemovingItems.js)
+const { startRemoving, isRemoving } = useRemovingItems(deleteItem)
 
 // Drag & Drop braucht Zugriff auf items/tiers der aktiven Tierlist von oben.
 // draggedItem/dropTarget werden an Pool und Tier-Reihen weitergereicht, damit

@@ -10,9 +10,10 @@
       'is-floating': floating,
       'is-placeholder': placeholder,
       'is-new': highlightDelay !== null,
+      'is-leaving': removing,
     }"
     :style="highlightDelay !== null ? { '--new-delay': highlightDelay + 'ms' } : null"
-    :data-item-id="itemId"
+    :data-item-id="removing ? null : itemId"
     @pointerdown="handlePointerDown"
   >
     <!-- Stift-Button (Namen bearbeiten) und Löschen-Button (×) werden nur im
@@ -111,6 +112,13 @@ const props = defineProps({
   highlightDelay: {
     type: Number,
     default: null,
+  },
+  // Dieses Item wurde gelöscht und blendet gerade rötlich aus. Es liegt noch
+  // ein paar hundert Millisekunden in den Daten, damit die Animation
+  // überhaupt laufen kann. Siehe useRemovingItems.js.
+  removing: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -293,6 +301,73 @@ function cancelEditing() {
     box-shadow:
       0 0 0 3px rgba(52, 211, 153, 0),
       0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+}
+
+/* Gegenstück zum grünen Aufleuchten: ein gelöschtes Item blitzt kurz rot auf
+   und löst sich dann nach oben auf — leicht kleiner werdend, unscharf und
+   durchsichtig, wie ein Geist. Erst danach fliegt es wirklich aus den Daten
+   (siehe useRemovingItems.js).
+
+   Steht bewusst NACH der is-new-Regel: löscht jemand ein Item, das gerade
+   erst hinzugekommen ist, sollen beide Klassen gleichzeitig gelten und das
+   Verschwinden gewinnen. Bei gleicher Spezifität entscheidet die Reihenfolge.
+
+   "forwards" hält den Endzustand, sonst poppte die Karte für die letzten
+   Millisekunden vor dem Entfernen noch einmal sichtbar zurück. */
+.item-card.is-leaving {
+  animation: item-fade-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+
+  /* Während des Ausblendens nicht mehr anfassbar — weder anklicken noch
+     ziehen. Zusätzlich fällt data-item-id weg (siehe oben im Template),
+     damit die Drag-Logik die Karte gar nicht erst als Ziel in Betracht
+     zieht. */
+  pointer-events: none;
+}
+
+@keyframes item-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    border-color: rgba(248, 113, 113, 0.95);
+    box-shadow:
+      0 0 0 3px rgba(248, 113, 113, 0.4),
+      0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  25% {
+    opacity: 0.95;
+    transform: scale(1.02) translateY(0);
+    border-color: rgba(248, 113, 113, 0.95);
+    box-shadow:
+      0 0 0 3px rgba(248, 113, 113, 0.35),
+      0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.86) translateY(-10px);
+    filter: blur(3px);
+    border-color: rgba(248, 113, 113, 0);
+    box-shadow:
+      0 0 0 3px rgba(248, 113, 113, 0),
+      0 10px 24px rgba(0, 0, 0, 0);
+  }
+}
+
+/* Bei "Bewegung reduzieren" bleibt das rote Aufleuchten und das Ausblenden,
+   aber ohne Schrumpfen, Aufsteigen und Unschärfe. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes item-fade-out {
+    0% {
+      opacity: 1;
+      border-color: rgba(248, 113, 113, 0.95);
+    }
+
+    100% {
+      opacity: 0;
+      border-color: rgba(248, 113, 113, 0);
+    }
   }
 }
 
