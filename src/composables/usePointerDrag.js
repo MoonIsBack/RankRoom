@@ -101,7 +101,7 @@ export function usePointerDrag(items, tiers) {
     draggedItem.value = pendingItem
     draggedFromZone.value = pendingFromZone
     document.body.style.userSelect = 'none'
-    layoutSnapshot = captureLayout(pendingItem.id)
+    layoutSnapshot = captureLayout()
   }
 
   // Friert die Geometrie ALLER Drop-Zonen und aller Karten darin EINMAL ein,
@@ -134,25 +134,35 @@ export function usePointerDrag(items, tiers) {
   // an der alten Stelle hängen. Die Zeiger-Y-Position wird beim Vergleich
   // genauso umgerechnet.
   //
-  // Die gezogene Karte selbst (excludeItemId) wird NICHT mit eingefangen: sie
-  // ist visuell ausgeblendet und soll beim Zielen keine Rolle mehr spielen —
-  // sonst müsste man erst durch ihr komplettes "Phantom"-Rechteck hindurch,
-  // bevor die Nachbarkarte überhaupt als Ziel erkannt wird.
-  function captureLayout(excludeItemId) {
+  // Eingefroren werden PLÄTZE, nicht Karten. Ein Platz ist einfach "die
+  // n-te Position in dieser Reihe" mit ihrem Rechteck. Das ist die
+  // entscheidende Umstellung gegenüber einer früheren Fassung, die sich
+  // gemerkt hat, welche KARTE wo liegt.
+  //
+  // Der Grund: sobald man zieht, verschwindet die Original-Karte per
+  // display:none aus dem Fluss und der Platzhalter kommt dazu. In der
+  // Ursprungs-Reihe sind also weiterhin genau so viele Elemente im Fluss wie
+  // vorher — die Plätze bleiben exakt dieselben, nur wer auf welchem Platz
+  // sitzt, ändert sich. Bei einer Reihe, die auf mehrere Zeilen umbricht,
+  // rutscht eine Karte dadurch schnell mal eine GANZE ZEILE weiter. Merkt man
+  // sich Karten statt Plätze, zeigt man rechts oben hin und trifft die Karte,
+  // die dort vor dem Anfassen lag — die Vorschau erscheint dann links unten.
+  // Merkt man sich Plätze, kann das nicht passieren.
+  function captureLayout() {
     const snapshot = new Map()
 
     document.querySelectorAll('[data-drop-zone]').forEach((zoneEl) => {
-      const items = new Map()
+      const slots = []
 
       zoneEl.querySelectorAll('[data-item-id]').forEach((el) => {
-        if (el.dataset.itemId !== '__placeholder__' && el.dataset.itemId !== excludeItemId) {
-          items.set(el.dataset.itemId, toDocRect(el.getBoundingClientRect()))
+        if (el.dataset.itemId !== '__placeholder__') {
+          slots.push(toDocRect(el.getBoundingClientRect()))
         }
       })
 
       snapshot.set(zoneEl.dataset.dropZone, {
         rect: toDocRect(zoneEl.getBoundingClientRect()),
-        items,
+        slots,
       })
     })
 
@@ -274,7 +284,17 @@ export function usePointerDrag(items, tiers) {
 
     // Für JEDE Zone identisch und ausschließlich auf dem eingefrorenen
     // Schnappschuss — kein einziger Live-Messwert (siehe captureLayout).
-    dropTarget.value = { zone, index: computeInsertIndex(zone, x, docY, targetItems) }
+    //
+    // Wie viele Plätze es überhaupt gibt, hängt davon ab, ob die gezogene
+    // Karte aus dieser Reihe stammt: kommt sie von hier, ersetzt der
+    // Platzhalter sie im Fluss (gleich viele Elemente wie vorher). Kommt sie
+    // von woanders, kommt der Platzhalter zusätzlich dazu — dann gibt es
+    // einen Platz mehr.
+    const slotCount = layoutSnapshot.get(zone)?.slots.length ?? 0
+    const maxSlot = zone === draggedFromZone.value ? Math.max(slotCount - 1, 0) : slotCount
+    const slot = Math.min(Math.max(resolveSlot(zone, x, docY), 0), maxSlot)
+
+    dropTarget.value = { zone, slot, index: slotToIndex(slot, zone, targetItems) }
   }
 
   // Welche Zone der Zeiger anvisiert, anhand der eingefrorenen Zonen-Rechtecke.
@@ -355,81 +375,83 @@ export function usePointerDrag(items, tiers) {
   // die Hysterese über den zuletzt gewählten Index.
   const DEAD_ZONE_RATIO = 0.06
 
-  // Bestimmt die Vor-/Nach-Entscheidung für eine Karte an gegebener Position.
+  // Auf welchen PLATZ zeigt der Zeiger, wenn er über dem Platz mit dem
+  // gegebenen Rechteck steht — auf diesen oder schon auf den danach?
   //
-  // Kernidee: der Wechselpunkt liegt NICHT starr auf der Kartenmitte, sondern
+  // Kernidee: der Wechselpunkt liegt NICHT starr in der Platzmitte, sondern
   // wird um DIRECTION_LEAD_RATIO in die aktuelle Zieh-Richtung vorverlegt.
   // Zieht man nach rechts, kippt die Vorschau also schon deutlich vor der
-  // Mitte der Nachbarkarte um; zieht man nach links, entsprechend spiegelbildlich.
+  // Mitte des Nachbarplatzes um; zieht man nach links, spiegelbildlich.
   // Das ersetzt gleichzeitig die alte tote Zone: weil der Wechselpunkt beim
   // Richtungswechsel auf die andere Seite der Mitte springt, muss man ein
   // ordentliches Stück zurückziehen, damit sich die Entscheidung wieder
   // dreht — Zittern kann sie nicht umkippen.
-  function resolveSideOfCard(x, rect, cardIndex, zone) {
+  function resolveSlotSide(x, rect, slotIndex, zone) {
     const relativeX = (x - rect.left) / rect.width
 
     if (horizontalDirection !== 0) {
       const threshold = 0.5 - horizontalDirection * DIRECTION_LEAD_RATIO
 
-      return relativeX < threshold ? cardIndex : cardIndex + 1
+      return relativeX < threshold ? slotIndex : slotIndex + 1
     }
 
     if (relativeX < 0.5 - DEAD_ZONE_RATIO / 2) {
-      return cardIndex
+      return slotIndex
     }
 
     if (relativeX > 0.5 + DEAD_ZONE_RATIO / 2) {
-      return cardIndex + 1
+      return slotIndex + 1
     }
 
+    // Noch genau in der Mitte und ohne erkannte Richtung: bei der zuletzt
+    // getroffenen Entscheidung bleiben, statt zu würfeln.
     const current = dropTarget.value
 
-    if (
-      current?.zone === zone &&
-      (current.index === cardIndex || current.index === cardIndex + 1)
-    ) {
-      return current.index
+    if (current?.zone === zone && (current.slot === slotIndex || current.slot === slotIndex + 1)) {
+      return current.slot
     }
 
-    return relativeX < 0.5 ? cardIndex : cardIndex + 1
+    return relativeX < 0.5 ? slotIndex : slotIndex + 1
   }
 
-  // Einfüge-Position innerhalb einer Zone — für ALLE Zonen dieselbe Logik,
-  // ausschließlich auf dem eingefrorenen Schnappschuss (siehe captureLayout).
+  // Auf welchem PLATZ der Reihe soll die Platzhalter-Karte erscheinen?
   //
-  // Ablauf: erst die Karte finden, auf die gezielt wird, dann über
-  // resolveSideOfCard entscheiden, ob davor oder dahinter eingefügt wird.
+  // Das ist bewusst die Frage, die hier beantwortet wird — nicht "welche Karte
+  // liegt unter dem Zeiger". Der Nutzer sieht während des Ziehens ja nur
+  // Plätze: er schiebt den Finger dorthin, wo die Karte landen soll, und
+  // erwartet die Vorschau genau dort. Siehe captureLayout, warum die Plätze
+  // dafür stabil sind.
   //
-  // Beim Finden werden Reihen, die optisch umgebrochen sind (mehrzeilig),
-  // bewusst zuerst über die Y-Achse eingegrenzt: liegt der Zeiger auf Höhe
-  // einer bestimmten Zeile, kommen nur Karten AUS DIESER ZEILE in Frage.
-  // Sonst könnte eine Karte aus der Zeile darüber "näher" sein und man würde
-  // beim waagerechten Ziehen unvermittelt in die falsche Zeile springen.
-  function computeInsertIndex(zone, x, docY, targetItems) {
+  // Mehrzeilig umgebrochene Reihen werden zuerst über die Y-Achse eingegrenzt:
+  // liegt der Zeiger auf Höhe einer bestimmten Zeile, kommen nur Plätze AUS
+  // DIESER ZEILE in Frage. Sonst könnte ein Platz aus der Zeile darüber
+  // rechnerisch "näher" sein und man würde beim waagerechten Ziehen
+  // unvermittelt in die falsche Zeile springen.
+  function resolveSlot(zone, x, docY) {
     const entry = layoutSnapshot.get(zone)
 
-    if (!entry || entry.items.size === 0) {
+    if (!entry || entry.slots.length === 0) {
       return 0
     }
 
-    // Karten auf Höhe des Zeigers (dieselbe optische Zeile)
     const sameLine = []
 
-    for (const [id, rect] of entry.items) {
+    entry.slots.forEach((rect, slotIndex) => {
       if (docY >= rect.top && docY <= rect.bottom) {
-        sameLine.push([id, rect])
+        sameLine.push([slotIndex, rect])
       }
-    }
+    })
 
-    const candidates = sameLine.length > 0 ? sameLine : [...entry.items]
+    const candidates =
+      sameLine.length > 0 ? sameLine : entry.slots.map((rect, slotIndex) => [slotIndex, rect])
 
-    let matchedId = null
+    let matchedIndex = null
     let matchedRect = null
     let bestDistance = Infinity
 
-    for (const [id, rect] of candidates) {
+    for (const [slotIndex, rect] of candidates) {
       // Innerhalb einer Zeile zählt nur der waagerechte Abstand, sonst der
-      // echte 2D-Abstand zum Kartenmittelpunkt.
+      // echte 2D-Abstand zur Platzmitte.
       const distance =
         sameLine.length > 0
           ? Math.abs(x - (rect.left + rect.width / 2))
@@ -437,22 +459,60 @@ export function usePointerDrag(items, tiers) {
 
       if (distance < bestDistance) {
         bestDistance = distance
-        matchedId = id
+        matchedIndex = slotIndex
         matchedRect = rect
       }
     }
 
-    if (!matchedId) {
+    if (matchedIndex === null) {
       return 0
     }
 
-    const cardIndex = targetItems.findIndex((item) => item.id === matchedId)
+    const slot = resolveSlotSide(x, matchedRect, matchedIndex, zone)
 
-    if (cardIndex === -1) {
-      return targetItems.length
+    if (sameLine.length === 0) {
+      return slot
     }
 
-    return resolveSideOfCard(x, matchedRect, cardIndex, zone)
+    // Der Zeiger ist auf Höhe einer bestimmten Zeile — dann soll die Vorschau
+    // auch IN dieser Zeile bleiben.
+    //
+    // Ohne das passiert Folgendes: zielt man rechts neben die letzte Karte
+    // einer vollen Zeile, ist der Platz "eins weiter" zwangsläufig der ERSTE
+    // Platz der nächsten Zeile. Die Vorschau sprang dann nach links unten,
+    // obwohl der Finger rechts oben war. Der Platz, den man eigentlich meint,
+    // ist der letzte Platz DIESER Zeile: die Karte landet dort und schiebt
+    // ihre Vorgängerin in die nächste Zeile — genau das, was man sieht und
+    // erwartet.
+    //
+    // Nur in der letzten Zeile darf ein Platz dahinter gewählt werden, sonst
+    // könnte man nichts mehr ans Ende der Reihe anhängen.
+    const lineFirst = sameLine[0][0]
+    const lineLast = sameLine[sameLine.length - 1][0]
+    const upperBound = lineLast === entry.slots.length - 1 ? lineLast + 1 : lineLast
+
+    return Math.min(Math.max(slot, lineFirst), upperBound)
+  }
+
+  // Rechnet den Platz in den Index um, den moveItemTo/TierRow brauchen.
+  //
+  // Beide Seiten zählen unterschiedlich: der Platz zählt nur das, was gerade
+  // im Fluss liegt (die gezogene Karte ist ja ausgeblendet), der Index zählt
+  // im Array MIT der gezogenen Karte. Zieht man innerhalb derselben Reihe um
+  // und liegt der Zielplatz hinter der alten Position der Karte, verschiebt
+  // sich deshalb alles um genau eins.
+  function slotToIndex(slot, zone, targetItems) {
+    if (zone !== draggedFromZone.value) {
+      return slot
+    }
+
+    const draggedIndex = targetItems.findIndex((item) => item.id === draggedItem.value?.id)
+
+    if (draggedIndex === -1) {
+      return slot
+    }
+
+    return slot <= draggedIndex ? slot : slot + 1
   }
 
   function handlePointerUp(event) {
