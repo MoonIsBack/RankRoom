@@ -1,3 +1,19 @@
+<script setup>
+// tierListName = Name der gerade aktiven Tierlist
+// totalItems kommt von der übergeordneten App.vue und zeigt an, wie viele
+// Items die aktuelle Tierlist insgesamt hat (eingestuft + noch nicht eingestuft)
+defineProps({
+  tierListName: {
+    type: String,
+    required: true,
+  },
+  totalItems: {
+    type: Number,
+    required: true,
+  },
+})
+</script>
+
 <template>
   <section class="hero-section">
     <div class="hero-content">
@@ -22,22 +38,6 @@
     </div>
   </section>
 </template>
-
-<script setup>
-// tierListName = Name der gerade aktiven Tierlist
-// totalItems kommt von der übergeordneten App.vue und zeigt an, wie viele
-// Items die aktuelle Tierlist insgesamt hat (eingestuft + noch nicht eingestuft)
-defineProps({
-  tierListName: {
-    type: String,
-    required: true,
-  },
-  totalItems: {
-    type: Number,
-    required: true,
-  },
-})
-</script>
 
 <style scoped>
 .hero-section {

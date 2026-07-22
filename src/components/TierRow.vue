@@ -1,3 +1,110 @@
+<script setup>
+// Eine einzelne Reihe der Tierlist (z. B. die "S"-Reihe) mit allen
+// Items, die dort bereits einsortiert wurden, plus Griff zum Verschieben
+// der ganzen Reihe und Zahnrad für Name/Farbe/Löschen.
+import { computed, ref } from 'vue'
+
+import ItemCard from './ItemCard.vue'
+import TierRowSettingsPopover from './TierRowSettingsPopover.vue'
+
+const props = defineProps({
+  tierId: {
+    type: String,
+    required: true,
+  },
+  name: {
+    type: String,
+    default: '',
+  },
+  color: {
+    type: String,
+    default: '',
+  },
+  items: {
+    type: Array,
+    default: () => [],
+  },
+  // Position dieser Reihe in tiers[] — fürs Reihen-Reorder (data-row-index)
+  rowIndex: {
+    type: Number,
+    required: true,
+  },
+  // Das Item, das gerade irgendwo auf der Seite gezogen wird (oder null) —
+  // wird als ganzes Objekt gebraucht, damit die Platzhalter-Karte unten
+  // Name/Bild anzeigen kann, nicht nur die id
+  draggedItem: {
+    type: Object,
+    default: null,
+  },
+  // Zone, aus der das gezogene Item ursprünglich kommt: 'pool' oder die id
+  // einer Tier-Reihe. Wird gebraucht, um zwischen "Item wird innerhalb
+  // DIESER Reihe umsortiert" und "Item kommt von woanders" zu unterscheiden
+  // (siehe isSameZoneReorder unten).
+  draggedFromZone: {
+    type: String,
+    default: null,
+  },
+  // Wo ein gezogenes Item gerade landen würde: { zone, index } oder null
+  dropTarget: {
+    type: Object,
+    default: null,
+  },
+  // Index der Reihe, die gerade verschoben wird (oder null)
+  draggedRowIndex: {
+    type: Number,
+    default: null,
+  },
+  // Index, an dem eine verschobene Reihe gerade landen würde (oder null)
+  rowDropIndex: {
+    type: Number,
+    default: null,
+  },
+  // Ob die Reihe gelöscht werden darf (mind. eine Reihe muss übrig bleiben)
+  canDeleteTierRow: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+defineEmits([
+  'pointer-down-item',
+  'row-pointer-down',
+  'rename-tier',
+  'change-tier-color',
+  'delete-tier',
+])
+
+// Steuert, ob das Reihen-Einstellungen-Popover gerade offen ist
+const isSettingsOpen = ref(false)
+// Referenz auf den Zahnrad-Button, um das Popover in seiner Nähe zu positionieren
+const settingsButtonRef = ref(null)
+// Position des Zahnrad-Buttons im Moment des Öffnens (das Popover wird per
+// Teleport an <body> gehängt, damit es nicht vom overflow:hidden des
+// Tierlist-Kastens abgeschnitten wird — dafür braucht es diese Koordinaten)
+const settingsAnchorRect = ref(null)
+
+function openSettings() {
+  settingsAnchorRect.value = settingsButtonRef.value.getBoundingClientRect()
+  isSettingsOpen.value = true
+}
+
+// Wird die ganze Reihe optisch hervorgehoben, weil gerade ein Item hierher
+// gezogen wird? Ist das der Fall, ist dropTarget garantiert gesetzt (siehe
+// App.vue/usePointerDrag.js), die Platzhalter-Karte unten kann sich also
+// blind auf dropTarget.index verlassen.
+const isDropZone = computed(() => props.dropTarget?.zone === props.tierId)
+
+// Wird das gezogene Item gerade INNERHALB dieser Reihe umsortiert (nicht in
+// eine andere Reihe/den Pool verschoben)? Dann zeigt die Platzhalter-Karte
+// schon genau, wohin es kommt — die alte, ausgegraute Original-Karte an
+// ihrer bisherigen Stelle wäre dann nur eine verwirrende zweite Anzeige
+// derselben Karte und wird komplett ausgeblendet statt nur gedimmt. Zieht
+// man das Item dagegen in eine ANDERE Reihe, bleibt die alte Stelle hier
+// ausgegraut sichtbar — das ist dort weiterhin hilfreich (zeigt "kommt von
+// hier"), ohne mit einer Platzhalter-Karte in derselben Reihe zu kollidieren.
+const isSameZoneReorder = computed(() => props.draggedFromZone === props.tierId && isDropZone.value)
+</script>
+
 <template>
   <div
     class="tier-row"
@@ -105,95 +212,6 @@
     />
   </div>
 </template>
-
-<script setup>
-// Eine einzelne Reihe der Tierlist (z. B. die "S"-Reihe) mit allen
-// Items, die dort bereits einsortiert wurden, plus Griff zum Verschieben
-// der ganzen Reihe und Zahnrad für Name/Farbe/Löschen.
-import { computed, ref } from 'vue'
-
-import ItemCard from './ItemCard.vue'
-import TierRowSettingsPopover from './TierRowSettingsPopover.vue'
-
-const props = defineProps({
-  tierId: String,
-  name: String,
-  color: String,
-  items: Array,
-  // Position dieser Reihe in tiers[] — fürs Reihen-Reorder (data-row-index)
-  rowIndex: Number,
-  // Das Item, das gerade irgendwo auf der Seite gezogen wird (oder null) —
-  // wird als ganzes Objekt gebraucht, damit die Platzhalter-Karte unten
-  // Name/Bild anzeigen kann, nicht nur die id
-  draggedItem: {
-    type: Object,
-    default: null,
-  },
-  // Zone, aus der das gezogene Item ursprünglich kommt: 'pool' oder die id
-  // einer Tier-Reihe. Wird gebraucht, um zwischen "Item wird innerhalb
-  // DIESER Reihe umsortiert" und "Item kommt von woanders" zu unterscheiden
-  // (siehe isSameZoneReorder unten).
-  draggedFromZone: {
-    type: String,
-    default: null,
-  },
-  // Wo ein gezogenes Item gerade landen würde: { zone, index } oder null
-  dropTarget: {
-    type: Object,
-    default: null,
-  },
-  // Index der Reihe, die gerade verschoben wird (oder null)
-  draggedRowIndex: {
-    type: Number,
-    default: null,
-  },
-  // Index, an dem eine verschobene Reihe gerade landen würde (oder null)
-  rowDropIndex: {
-    type: Number,
-    default: null,
-  },
-  // Ob die Reihe gelöscht werden darf (mind. eine Reihe muss übrig bleiben)
-  canDeleteTierRow: Boolean,
-})
-
-defineEmits([
-  'pointer-down-item',
-  'row-pointer-down',
-  'rename-tier',
-  'change-tier-color',
-  'delete-tier',
-])
-
-// Steuert, ob das Reihen-Einstellungen-Popover gerade offen ist
-const isSettingsOpen = ref(false)
-// Referenz auf den Zahnrad-Button, um das Popover in seiner Nähe zu positionieren
-const settingsButtonRef = ref(null)
-// Position des Zahnrad-Buttons im Moment des Öffnens (das Popover wird per
-// Teleport an <body> gehängt, damit es nicht vom overflow:hidden des
-// Tierlist-Kastens abgeschnitten wird — dafür braucht es diese Koordinaten)
-const settingsAnchorRect = ref(null)
-
-function openSettings() {
-  settingsAnchorRect.value = settingsButtonRef.value.getBoundingClientRect()
-  isSettingsOpen.value = true
-}
-
-// Wird die ganze Reihe optisch hervorgehoben, weil gerade ein Item hierher
-// gezogen wird? Ist das der Fall, ist dropTarget garantiert gesetzt (siehe
-// App.vue/usePointerDrag.js), die Platzhalter-Karte unten kann sich also
-// blind auf dropTarget.index verlassen.
-const isDropZone = computed(() => props.dropTarget?.zone === props.tierId)
-
-// Wird das gezogene Item gerade INNERHALB dieser Reihe umsortiert (nicht in
-// eine andere Reihe/den Pool verschoben)? Dann zeigt die Platzhalter-Karte
-// schon genau, wohin es kommt — die alte, ausgegraute Original-Karte an
-// ihrer bisherigen Stelle wäre dann nur eine verwirrende zweite Anzeige
-// derselben Karte und wird komplett ausgeblendet statt nur gedimmt. Zieht
-// man das Item dagegen in eine ANDERE Reihe, bleibt die alte Stelle hier
-// ausgegraut sichtbar — das ist dort weiterhin hilfreich (zeigt "kommt von
-// hier"), ohne mit einer Platzhalter-Karte in derselben Reihe zu kollidieren.
-const isSameZoneReorder = computed(() => props.draggedFromZone === props.tierId && isDropZone.value)
-</script>
 
 <style scoped>
 .tier-row {

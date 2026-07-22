@@ -6,8 +6,8 @@
 // Der Vorteil: Wir brauchen keinen eigenen Server, um Bilder zu speichern —
 // der Nachteil: Bilder brauchen im localStorage deutlich mehr Platz als reiner Text.
 
-// Nur diese Bildformate werden akzeptiert
-export const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg']
+// Nur diese Bildformate werden akzeptiert (nur hier drin gebraucht)
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg']
 
 // Für das <input accept="..."> im Datei-Dialog: MIME-Typen UND Dateiendungen,
 // weil manche Betriebssysteme nur nach der Endung filtern

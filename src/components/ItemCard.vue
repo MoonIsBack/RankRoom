@@ -1,64 +1,3 @@
-<template>
-  <!-- data-item-id wird für das Pointer-Drag-Hit-Testing gebraucht (siehe
-       usePointerDrag.js: darüber wird erkannt, über welcher Karte gerade
-       gezogen wird). Während der Name bearbeitet wird, lösen wir keinen Drag
-       aus, damit man im Textfeld mit der Maus Text markieren kann. -->
-  <div
-    class="item-card"
-    :class="{
-      'is-dimmed': dimmed,
-      'is-floating': floating,
-      'is-placeholder': placeholder,
-      'is-new': highlightDelay !== null,
-      'is-leaving': removing,
-    }"
-    :style="highlightDelay !== null ? { '--new-delay': highlightDelay + 'ms' } : null"
-    :data-item-id="removing ? null : itemId"
-    @pointerdown="handlePointerDown"
-  >
-    <!-- Stift-Button (Namen bearbeiten) und Löschen-Button (×) werden nur im
-         Item-Pool angezeigt, nicht in den Tier-Reihen -->
-    <button
-      v-if="showActions"
-      class="edit-button"
-      title="Namen bearbeiten"
-      @pointerdown.stop
-      @click="startEditing"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-      </svg>
-    </button>
-    <button v-if="showActions" class="delete-button" @pointerdown.stop @click="$emit('delete')">
-      ×
-    </button>
-
-    <!-- Hat das Item ein Bild, füllt es die ganze Karte aus -->
-    <img v-if="image" :src="image" :alt="name" class="item-image" draggable="false" />
-
-    <!-- Beim Bearbeiten ersetzt ein Eingabefeld den Namen, sonst wird er nur angezeigt -->
-    <input
-      v-if="isEditingName"
-      ref="editInputRef"
-      v-model="editedName"
-      :class="['name-input', { 'item-caption': image }]"
-      @keyup.enter="saveEditing"
-      @keyup.esc="cancelEditing"
-      @blur="saveEditing"
-      @pointerdown.stop
-    />
-    <span v-else :class="{ 'item-caption': image }">{{ name }}</span>
-  </div>
-</template>
-
 <script setup>
 // Eine einzelne Item-Karte (z. B. "Waves"), die sowohl im Item-Pool
 // als auch in den Tier-Reihen (S, A, B, ...) verwendet wird.
@@ -71,7 +10,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  name: String,
+  name: {
+    type: String,
+    default: '',
+  },
   // image = Data-URL des hochgeladenen Bildes, oder null/undefined bei
   // Items ohne Bild (dann wird nur der Name angezeigt)
   image: {
@@ -178,6 +120,67 @@ function cancelEditing() {
   isEditingName.value = false
 }
 </script>
+
+<template>
+  <!-- data-item-id wird für das Pointer-Drag-Hit-Testing gebraucht (siehe
+       usePointerDrag.js: darüber wird erkannt, über welcher Karte gerade
+       gezogen wird). Während der Name bearbeitet wird, lösen wir keinen Drag
+       aus, damit man im Textfeld mit der Maus Text markieren kann. -->
+  <div
+    class="item-card"
+    :class="{
+      'is-dimmed': dimmed,
+      'is-floating': floating,
+      'is-placeholder': placeholder,
+      'is-new': highlightDelay !== null,
+      'is-leaving': removing,
+    }"
+    :style="highlightDelay !== null ? { '--new-delay': highlightDelay + 'ms' } : null"
+    :data-item-id="removing ? null : itemId"
+    @pointerdown="handlePointerDown"
+  >
+    <!-- Stift-Button (Namen bearbeiten) und Löschen-Button (×) werden nur im
+         Item-Pool angezeigt, nicht in den Tier-Reihen -->
+    <button
+      v-if="showActions"
+      class="edit-button"
+      title="Namen bearbeiten"
+      @pointerdown.stop
+      @click="startEditing"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+    </button>
+    <button v-if="showActions" class="delete-button" @pointerdown.stop @click="$emit('delete')">
+      ×
+    </button>
+
+    <!-- Hat das Item ein Bild, füllt es die ganze Karte aus -->
+    <img v-if="image" :src="image" :alt="name" class="item-image" draggable="false" />
+
+    <!-- Beim Bearbeiten ersetzt ein Eingabefeld den Namen, sonst wird er nur angezeigt -->
+    <input
+      v-if="isEditingName"
+      ref="editInputRef"
+      v-model="editedName"
+      :class="['name-input', { 'item-caption': image }]"
+      @keyup.enter="saveEditing"
+      @keyup.esc="cancelEditing"
+      @blur="saveEditing"
+      @pointerdown.stop
+    />
+    <span v-else :class="{ 'item-caption': image }">{{ name }}</span>
+  </div>
+</template>
 
 <style scoped>
 .item-card {

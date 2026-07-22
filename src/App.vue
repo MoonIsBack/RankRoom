@@ -1,3 +1,223 @@
+<script setup>
+// App.vue steckt hier nur noch die Bausteine zusammen: Sie holt sich den
+// kompletten Tierlisten-Zustand aus useTierLists() und die Drag & Drop-Logik
+// aus usePointerDrag()/useRowPointerDrag() und reicht beides an die
+// Komponenten weiter.
+import { ref } from 'vue'
+
+import AppHeader from './components/AppHeader.vue'
+import HeroSection from './components/HeroSection.vue'
+import TierRow from './components/TierRow.vue'
+import StatsGrid from './components/StatsGrid.vue'
+import AddItemForm from './components/AddItemForm.vue'
+import ItemPool from './components/ItemPool.vue'
+import ItemCard from './components/ItemCard.vue'
+import ResetModal from './components/modals/ResetModal.vue'
+import SavedListsModal from './components/modals/SavedListsModal.vue'
+import NewTierListModal from './components/modals/NewTierListModal.vue'
+import FileNoticeModal from './components/modals/FileNoticeModal.vue'
+import InfoModal from './components/modals/InfoModal.vue'
+import ExportImageModal from './components/modals/ExportImageModal.vue'
+
+import { useRecentlyAdded } from './composables/useRecentlyAdded'
+import { useRemovingItems } from './composables/useRemovingItems'
+import { useTierLists } from './composables/useTierLists'
+import { usePointerDrag } from './composables/usePointerDrag'
+import { useRowPointerDrag } from './composables/useRowPointerDrag'
+import { useFileDropZone } from './composables/useFileDropZone'
+import { readImageFiles } from './composables/useImageUpload'
+import { parseTierListFile } from './utils/importTierList'
+
+// Alles rund um Tierlisten (laden, speichern, erstellen, löschen, Items verwalten).
+// Die Funktionen mit "as ...Store" werden gleich noch um Drag-Reset und
+// Modal-Schließen ergänzt, deshalb bekommen sie hier interne Namen.
+const {
+  activeTierList,
+  tierListName,
+  items,
+  tiers,
+  rankedItemCount,
+  unrankedItemCount,
+  totalItemCount,
+  savedLists,
+  addItem,
+  addItemsFromImages,
+  deleteItem,
+  renameItem,
+  canAddTierRow,
+  canDeleteTierRow,
+  addTierRow,
+  deleteTierRow,
+  renameTierRow,
+  changeTierColor,
+  deleteTierList,
+  exportActiveTierList,
+  importTierList,
+  createNewTierList: createTierListInStore,
+  confirmReset: resetTierListInStore,
+  openTierList: openTierListInStore,
+} = useTierLists()
+
+// Hebt frisch hinzugefügte Items kurz hervor — egal ob per Name, Dateiauswahl
+// oder Bild-Drop entstanden. Bewusst getrennt vom Tierlisten-Zustand, damit
+// diese rein optische Information nie im Browser-Speicher landet.
+const { markAsNew, highlightDelayFor } = useRecentlyAdded()
+
+// Lässt ein gelöschtes Item erst kurz rötlich verblassen, bevor es wirklich
+// aus den Daten fliegt (siehe useRemovingItems.js)
+const { startRemoving, isRemoving } = useRemovingItems(deleteItem)
+
+// Drag & Drop braucht Zugriff auf items/tiers der aktiven Tierlist von oben.
+// draggedItem/dropTarget werden an Pool und Tier-Reihen weitergereicht, damit
+// sie beim Drüberziehen eine Vorschau anzeigen können; pointerPosition steuert
+// die schwebende Karte weiter unten im Template (Teleport).
+const { draggedItem, draggedFromZone, pointerPosition, dropTarget, startPointerDrag, resetDrag } =
+  usePointerDrag(items, tiers)
+
+// Eigenständiges zweites Drag-System nur fürs Umsortieren der Tier-Reihen
+// selbst (siehe useRowPointerDrag.js für die Begründung der Trennung)
+const { draggedRowIndex, rowDropIndex, startRowDrag, resetRowDrag } = useRowPointerDrag(tiers)
+
+// Wird an mehreren Stellen gebraucht, wenn während eines laufenden Drags die
+// Tierlist gewechselt/zurückgesetzt wird
+function resetAllDrags() {
+  resetDrag()
+  resetRowDrag()
+}
+
+// Fügt ein Item über das Namensfeld hinzu und hebt es kurz hervor
+function handleAddItem(itemName) {
+  const newId = addItem(itemName)
+
+  if (newId) {
+    markAsNew([newId])
+  }
+}
+
+// Zentrale Verarbeitung für Bilddateien — egal ob sie über den Datei-Dialog
+// ("Bilder auswählen") oder per Drag & Drop auf die Seite kommen.
+// Schritt 1: Dateien einlesen und falsche Formate aussortieren.
+// Schritt 2: gültige Bilder hinzufügen, dabei Duplikate herausfiltern.
+// Schritt 3: falls etwas übersprungen wurde, ein Hinweis-Popup zeigen.
+async function handleImageFiles(fileList) {
+  const { items: imageItems, rejectedFileNames } = await readImageFiles(fileList)
+
+  const { duplicateNames, addedIds } = addItemsFromImages(imageItems)
+
+  markAsNew(addedIds)
+
+  const groups = []
+
+  if (rejectedFileNames.length > 0) {
+    groups.push({
+      heading: 'Es werden nur PNG- und JPG-Bilder unterstützt:',
+      files: rejectedFileNames,
+    })
+  }
+
+  if (duplicateNames.length > 0) {
+    groups.push({
+      heading: 'Diese Bilder sind bereits in der Liste vorhanden:',
+      files: duplicateNames,
+    })
+  }
+
+  if (groups.length > 0) {
+    fileNoticeGroups.value = groups
+  }
+}
+
+// Erlaubt es, Bilder von überall auf der Seite reinzuziehen (siehe Vorlage oben)
+const { isDraggingFile, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
+  useFileDropZone(handleImageFiles)
+
+// Steuert, welches Modal (Popup) gerade sichtbar ist
+const showResetModal = ref(false)
+const showSavedListsModal = ref(false)
+const showNewTierListModal = ref(false)
+const showExportImageModal = ref(false)
+
+function openExportImageModal() {
+  showExportImageModal.value = true
+}
+
+// Hinweis-Gruppen für das FileNoticeModal (übersprungene Bilder: falsches
+// Format und/oder doppelt). Ist die Liste leer, wird das Popup nicht angezeigt.
+const fileNoticeGroups = ref([])
+
+function closeFileNotice() {
+  fileNoticeGroups.value = []
+}
+
+// Einfaches Hinweis-Popup ({ title, text }) — z. B. wenn ein Import fehlschlägt.
+// null bedeutet: kein Popup sichtbar.
+const infoMessage = ref(null)
+
+// Liest eine ausgewählte JSON-Datei ein und fügt sie als neue Tierlist hinzu.
+// Schlägt das Einlesen fehl (kaputte/fremde Datei), zeigen wir einen Hinweis.
+async function handleImportFile(file) {
+  try {
+    const parsedTierList = await parseTierListFile(file)
+    importTierList(parsedTierList)
+    resetAllDrags()
+  } catch (error) {
+    infoMessage.value = {
+      title: 'Import fehlgeschlagen',
+      text: error.message,
+    }
+  }
+}
+
+// --- Reset-Modal (Tierlist zurücksetzen) ---
+function openResetModal() {
+  showResetModal.value = true
+}
+
+function closeResetModal() {
+  showResetModal.value = false
+}
+
+// --- "Gespeicherte Tierlists"-Modal ---
+function openSavedListsModal() {
+  showSavedListsModal.value = true
+}
+
+function closeSavedListsModal() {
+  showSavedListsModal.value = false
+}
+
+// --- "Neue Tierlist"-Modal ---
+function openNewTierListModal() {
+  showNewTierListModal.value = true
+}
+
+function closeNewTierListModal() {
+  showNewTierListModal.value = false
+}
+
+// Neue Tierlist erstellen, laufenden Drag abbrechen und Modal schließen
+function createNewTierList(newName) {
+  createTierListInStore(newName)
+  resetAllDrags()
+  showNewTierListModal.value = false
+}
+
+// Aktive Tierlist zurücksetzen, laufenden Drag abbrechen und Modal schließen
+function confirmReset() {
+  resetTierListInStore()
+  resetAllDrags()
+  showResetModal.value = false
+}
+
+// Zu einer anderen gespeicherten Tierlist wechseln, laufenden Drag abbrechen
+// und das "Gespeicherte Tierlists"-Modal schließen
+function openTierList(tierListId) {
+  openTierListInStore(tierListId)
+  resetAllDrags()
+  showSavedListsModal.value = false
+}
+</script>
+
 <template>
   <!--
     dragenter/dragleave/dragover/drop hier auf der obersten Ebene erlauben es,
@@ -172,226 +392,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-// App.vue steckt hier nur noch die Bausteine zusammen: Sie holt sich den
-// kompletten Tierlisten-Zustand aus useTierLists() und die Drag & Drop-Logik
-// aus usePointerDrag()/useRowPointerDrag() und reicht beides an die
-// Komponenten weiter.
-import { ref } from 'vue'
-
-import AppHeader from './components/AppHeader.vue'
-import HeroSection from './components/HeroSection.vue'
-import TierRow from './components/TierRow.vue'
-import StatsGrid from './components/StatsGrid.vue'
-import AddItemForm from './components/AddItemForm.vue'
-import ItemPool from './components/ItemPool.vue'
-import ItemCard from './components/ItemCard.vue'
-import ResetModal from './components/modals/ResetModal.vue'
-import SavedListsModal from './components/modals/SavedListsModal.vue'
-import NewTierListModal from './components/modals/NewTierListModal.vue'
-import FileNoticeModal from './components/modals/FileNoticeModal.vue'
-import InfoModal from './components/modals/InfoModal.vue'
-import ExportImageModal from './components/modals/ExportImageModal.vue'
-
-import { useRecentlyAdded } from './composables/useRecentlyAdded'
-import { useRemovingItems } from './composables/useRemovingItems'
-import { useTierLists } from './composables/useTierLists'
-import { usePointerDrag } from './composables/usePointerDrag'
-import { useRowPointerDrag } from './composables/useRowPointerDrag'
-import { useFileDropZone } from './composables/useFileDropZone'
-import { readImageFiles } from './composables/useImageUpload'
-import { parseTierListFile } from './utils/importTierList'
-
-// Alles rund um Tierlisten (laden, speichern, erstellen, löschen, Items verwalten).
-// Die Funktionen mit "as ...Store" werden gleich noch um Drag-Reset und
-// Modal-Schließen ergänzt, deshalb bekommen sie hier interne Namen.
-const {
-  activeTierList,
-  tierListName,
-  items,
-  tiers,
-  rankedItemCount,
-  unrankedItemCount,
-  totalItemCount,
-  savedLists,
-  addItem,
-  addItemsFromImages,
-  deleteItem,
-  renameItem,
-  canAddTierRow,
-  canDeleteTierRow,
-  addTierRow,
-  deleteTierRow,
-  renameTierRow,
-  changeTierColor,
-  deleteTierList,
-  exportActiveTierList,
-  importTierList,
-  createNewTierList: createTierListInStore,
-  confirmReset: resetTierListInStore,
-  openTierList: openTierListInStore,
-} = useTierLists()
-
-// Hebt frisch hinzugefügte Items kurz hervor — egal ob per Name, Dateiauswahl
-// oder Bild-Drop entstanden. Bewusst getrennt vom Tierlisten-Zustand, damit
-// diese rein optische Information nie im Browser-Speicher landet.
-const { markAsNew, highlightDelayFor } = useRecentlyAdded()
-
-// Lässt ein gelöschtes Item erst kurz rötlich verblassen, bevor es wirklich
-// aus den Daten fliegt (siehe useRemovingItems.js)
-const { startRemoving, isRemoving } = useRemovingItems(deleteItem)
-
-// Drag & Drop braucht Zugriff auf items/tiers der aktiven Tierlist von oben.
-// draggedItem/dropTarget werden an Pool und Tier-Reihen weitergereicht, damit
-// sie beim Drüberziehen eine Vorschau anzeigen können; pointerPosition steuert
-// die schwebende Karte weiter unten im Template (Teleport).
-const { draggedItem, draggedFromZone, pointerPosition, dropTarget, startPointerDrag, resetDrag } =
-  usePointerDrag(items, tiers)
-
-// Eigenständiges zweites Drag-System nur fürs Umsortieren der Tier-Reihen
-// selbst (siehe useRowPointerDrag.js für die Begründung der Trennung)
-const { draggedRowIndex, rowDropIndex, startRowDrag, resetRowDrag } = useRowPointerDrag(tiers)
-
-// Wird an mehreren Stellen gebraucht, wenn während eines laufenden Drags die
-// Tierlist gewechselt/zurückgesetzt wird
-function resetAllDrags() {
-  resetDrag()
-  resetRowDrag()
-}
-
-// Zentrale Verarbeitung für Bilddateien — egal ob sie über den Datei-Dialog
-// ("Bilder auswählen") oder per Drag & Drop auf die Seite kommen.
-// Schritt 1: Dateien einlesen und falsche Formate aussortieren.
-// Schritt 2: gültige Bilder hinzufügen, dabei Duplikate herausfiltern.
-// Schritt 3: falls etwas übersprungen wurde, ein Hinweis-Popup zeigen.
-// Fügt ein Item über das Namensfeld hinzu und hebt es kurz hervor
-function handleAddItem(itemName) {
-  const newId = addItem(itemName)
-
-  if (newId) {
-    markAsNew([newId])
-  }
-}
-
-async function handleImageFiles(fileList) {
-  const { items: imageItems, rejectedFileNames } = await readImageFiles(fileList)
-
-  const { duplicateNames, addedIds } = addItemsFromImages(imageItems)
-
-  markAsNew(addedIds)
-
-  const groups = []
-
-  if (rejectedFileNames.length > 0) {
-    groups.push({
-      heading: 'Es werden nur PNG- und JPG-Bilder unterstützt:',
-      files: rejectedFileNames,
-    })
-  }
-
-  if (duplicateNames.length > 0) {
-    groups.push({
-      heading: 'Diese Bilder sind bereits in der Liste vorhanden:',
-      files: duplicateNames,
-    })
-  }
-
-  if (groups.length > 0) {
-    fileNoticeGroups.value = groups
-  }
-}
-
-// Erlaubt es, Bilder von überall auf der Seite reinzuziehen (siehe Vorlage oben)
-const { isDraggingFile, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
-  useFileDropZone(handleImageFiles)
-
-// Steuert, welches Modal (Popup) gerade sichtbar ist
-const showResetModal = ref(false)
-const showSavedListsModal = ref(false)
-const showNewTierListModal = ref(false)
-const showExportImageModal = ref(false)
-
-function openExportImageModal() {
-  showExportImageModal.value = true
-}
-
-// Hinweis-Gruppen für das FileNoticeModal (übersprungene Bilder: falsches
-// Format und/oder doppelt). Ist die Liste leer, wird das Popup nicht angezeigt.
-const fileNoticeGroups = ref([])
-
-function closeFileNotice() {
-  fileNoticeGroups.value = []
-}
-
-// Einfaches Hinweis-Popup ({ title, text }) — z. B. wenn ein Import fehlschlägt.
-// null bedeutet: kein Popup sichtbar.
-const infoMessage = ref(null)
-
-// Liest eine ausgewählte JSON-Datei ein und fügt sie als neue Tierlist hinzu.
-// Schlägt das Einlesen fehl (kaputte/fremde Datei), zeigen wir einen Hinweis.
-async function handleImportFile(file) {
-  try {
-    const parsedTierList = await parseTierListFile(file)
-    importTierList(parsedTierList)
-    resetAllDrags()
-  } catch (error) {
-    infoMessage.value = {
-      title: 'Import fehlgeschlagen',
-      text: error.message,
-    }
-  }
-}
-
-// --- Reset-Modal (Tierlist zurücksetzen) ---
-function openResetModal() {
-  showResetModal.value = true
-}
-
-function closeResetModal() {
-  showResetModal.value = false
-}
-
-// --- "Gespeicherte Tierlists"-Modal ---
-function openSavedListsModal() {
-  showSavedListsModal.value = true
-}
-
-function closeSavedListsModal() {
-  showSavedListsModal.value = false
-}
-
-// --- "Neue Tierlist"-Modal ---
-function openNewTierListModal() {
-  showNewTierListModal.value = true
-}
-
-function closeNewTierListModal() {
-  showNewTierListModal.value = false
-}
-
-// Neue Tierlist erstellen, laufenden Drag abbrechen und Modal schließen
-function createNewTierList(newName) {
-  createTierListInStore(newName)
-  resetAllDrags()
-  showNewTierListModal.value = false
-}
-
-// Aktive Tierlist zurücksetzen, laufenden Drag abbrechen und Modal schließen
-function confirmReset() {
-  resetTierListInStore()
-  resetAllDrags()
-  showResetModal.value = false
-}
-
-// Zu einer anderen gespeicherten Tierlist wechseln, laufenden Drag abbrechen
-// und das "Gespeicherte Tierlists"-Modal schließen
-function openTierList(tierListId) {
-  openTierListInStore(tierListId)
-  resetAllDrags()
-  showSavedListsModal.value = false
-}
-</script>
 
 <style scoped>
 .page {

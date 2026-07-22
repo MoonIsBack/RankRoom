@@ -1,44 +1,44 @@
-# frontend
+# RankRoom
 
-This template should help get you started developing with Vue 3 in Vite.
+Eine Tierlist-App: Items (Wörter oder Bilder) per Drag & Drop in Reihen von S
+bis D einsortieren. Läuft komplett im Browser — es gibt keinen Server, alle
+Daten bleiben im `localStorage` des Geräts.
 
-## Recommended IDE Setup
+## Was die App kann
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Items per Namenseingabe, Dateiauswahl oder Bild-Drop hinzufügen
+- Drag & Drop mit Maus **und** Touch (Handy/Tablet), inklusive Umsortieren
+  innerhalb einer Reihe
+- Tier-Reihen umbenennen, einfärben, hinzufügen, löschen und umsortieren
+- Mehrere Tierlisten parallel verwalten
+- Als JSON exportieren/importieren und als PNG/JPG-Bild speichern
 
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Entwicklung
 
 ```sh
 npm install
+npm run dev      # Entwicklungsserver
+npm run build    # Produktionsbuild nach dist/
+npm run lint     # oxlint + ESLint
+npm run format   # Prettier
 ```
 
-### Compile and Hot-Reload for Development
+Erfordert Node 22.18+ oder 24.12+.
 
-```sh
-npm run dev
+## Aufbau
+
+```
+src/
+  components/    Vue-Komponenten (Reihen, Karten, Kopfzeile)
+    modals/      Popups, alle auf Basis von BaseModal.vue
+  composables/   Wiederverwendbare Logik ohne eigenes Aussehen
+  utils/         Reine Hilfsfunktionen (Export, Import, Dateinamen)
+  storage/       Zugriff auf den localStorage
+  data/          Feste Vorgaben (Standard-Reihen, Farbpalette)
 ```
 
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+Die beiden wichtigsten Bausteine sind `composables/usePointerDrag.js`
+(Drag & Drop der Item-Karten) und `composables/useTierLists.js` (alles rund
+um die Tierlisten selbst). Beide sind ausführlich kommentiert — vor allem
+`usePointerDrag.js` erklärt, warum die Zielberechnung mit einer beim
+Anfassen **eingefrorenen** Geometrie arbeitet statt live zu messen.

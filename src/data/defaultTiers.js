@@ -7,12 +7,19 @@
 // (und ein Zurücksetzen) exakt dieselben Tier-ids bekommen — das würde die
 // Zuordnung beim Drag & Drop durcheinanderbringen, sobald mehr als eine
 // Tierlist existiert.
+//
+// Die Farben kommen aus der gemeinsamen Palette statt noch einmal fest
+// hier zu stehen: vorher waren dieselben fünf Farbwerte an zwei Stellen
+// eingetragen und konnten auseinanderlaufen.
+import { TIER_COLOR_PALETTE } from './tierColors'
+
+const DEFAULT_TIER_NAMES = ['S', 'A', 'B', 'C', 'D']
+
 export function createDefaultTiers() {
-  return [
-    { id: crypto.randomUUID(), name: 'S', color: '#ff7f7f', items: [] },
-    { id: crypto.randomUUID(), name: 'A', color: '#ffbf7f', items: [] },
-    { id: crypto.randomUUID(), name: 'B', color: '#ffdf7f', items: [] },
-    { id: crypto.randomUUID(), name: 'C', color: '#ffff7f', items: [] },
-    { id: crypto.randomUUID(), name: 'D', color: '#bfff7f', items: [] },
-  ]
+  return DEFAULT_TIER_NAMES.map((name, index) => ({
+    id: crypto.randomUUID(),
+    name,
+    color: TIER_COLOR_PALETTE[index],
+    items: [],
+  }))
 }

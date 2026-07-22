@@ -49,11 +49,12 @@ function loadImage(src) {
   })
 }
 
-// Kürzt Text mit "…", falls er zu breit für die Kachel ist
-function drawTruncatedText(ctx, text, centerX, centerY, maxWidth) {
+// Kürzt einen Text mit "…", falls er breiter als maxWidth wäre.
+// Setzt voraus, dass ctx.font bereits auf die gewünschte Schrift gesetzt ist,
+// denn measureText misst immer mit der gerade aktiven Schrift.
+function cutText(ctx, text, maxWidth) {
   if (ctx.measureText(text).width <= maxWidth) {
-    ctx.fillText(text, centerX, centerY)
-    return
+    return text
   }
 
   let shortened = text
@@ -61,7 +62,12 @@ function drawTruncatedText(ctx, text, centerX, centerY, maxWidth) {
     shortened = shortened.slice(0, -1)
   }
 
-  ctx.fillText(`${shortened}…`, centerX, centerY)
+  return `${shortened}…`
+}
+
+// Wie cutText, zeichnet den gekürzten Text aber direkt mittig an die Stelle
+function drawTruncatedText(ctx, text, centerX, centerY, maxWidth) {
+  ctx.fillText(cutText(ctx, text, maxWidth), centerX, centerY)
 }
 
 // Zeichnet eine einzelne Item-Kachel (mit Bild oder als Text-Karte)
@@ -183,21 +189,6 @@ export async function renderTierListToCanvas(tierList) {
   }
 
   return canvas
-}
-
-// Hilfsfunktion: kürzt einen Titel-Text mit "…", damit er nicht über die
-// verfügbare Breite hinausläuft
-function cutText(ctx, text, maxWidth) {
-  if (ctx.measureText(text).width <= maxWidth) {
-    return text
-  }
-
-  let shortened = text
-  while (shortened.length > 1 && ctx.measureText(`${shortened}…`).width > maxWidth) {
-    shortened = shortened.slice(0, -1)
-  }
-
-  return `${shortened}…`
 }
 
 // Lädt das gezeichnete Canvas als Bilddatei herunter.

@@ -1,41 +1,49 @@
 // Composable, um irgendwo auf der Seite Dateien per Drag & Drop entgegenzunehmen
 // (z. B. Bilder, die man aus dem Finder/Explorer auf die App zieht).
 // onFilesDropped wird mit den abgelegten Dateien aufgerufen.
-//
-// Die "wird gerade etwas hierüber gezogen?"-Zählerei kommt aus useDragOver,
-// hier kümmern wir uns nur zusätzlich darum, echte Datei-Drags von außerhalb
-// von normalem Item-Ziehen innerhalb der App zu unterscheiden.
-import { useDragOver } from './useDragOver'
+import { ref } from 'vue'
+
+// Erkennt einen echten Datei-Drag von außerhalb (z. B. aus dem Finder) und
+// unterscheidet ihn damit vom internen Ziehen einer Item-Karte zwischen Pool
+// und Tier-Reihen. Nur bei echten Dateien soll die App reagieren.
+function isFileDrag(event) {
+  return Boolean(event.dataTransfer) && Array.from(event.dataTransfer.types).includes('Files')
+}
 
 export function useFileDropZone(onFilesDropped) {
   // isDraggingFile ist true, während eine Datei über die Seite gezogen wird
   // (steuert die "Bilder hier ablegen"-Anzeige)
-  const { isDragOver: isDraggingFile, onDragEnter, onDragLeave, reset } = useDragOver()
+  const isDraggingFile = ref(false)
 
-  // Nur auf echte Datei-Drags von außerhalb reagieren (z. B. aus dem Finder),
-  // NICHT auf das interne Ziehen von Item-Karten zwischen Pool und Tier-Reihen
-  function isRealFileDrag(event) {
-    return Boolean(event.dataTransfer) && Array.from(event.dataTransfer.types).includes('Files')
-  }
+  // dragenter/dragleave feuern für JEDES Kind-Element einzeln, über das die
+  // Maus beim Ziehen fährt. Würde man die Anzeige einfach an- und ausschalten,
+  // flackerte sie beim Überqueren von Kind-Elementen. Deshalb wird mitgezählt:
+  // erst wenn der Zähler wieder bei 0 ist, ist die Maus wirklich draußen.
+  let enterCount = 0
 
   function handleDragEnter(event) {
-    if (!isRealFileDrag(event)) {
+    if (!isFileDrag(event)) {
       return
     }
 
-    onDragEnter()
+    enterCount++
+    isDraggingFile.value = true
   }
 
   function handleDragLeave(event) {
-    if (!isRealFileDrag(event)) {
+    if (!isFileDrag(event)) {
       return
     }
 
-    onDragLeave()
+    enterCount = Math.max(0, enterCount - 1)
+
+    if (enterCount === 0) {
+      isDraggingFile.value = false
+    }
   }
 
   function handleDragOver(event) {
-    if (!isRealFileDrag(event)) {
+    if (!isFileDrag(event)) {
       return
     }
 
@@ -44,13 +52,14 @@ export function useFileDropZone(onFilesDropped) {
   }
 
   function handleDrop(event) {
-    if (!isRealFileDrag(event)) {
+    if (!isFileDrag(event)) {
       return
     }
 
     event.preventDefault()
 
-    reset()
+    enterCount = 0
+    isDraggingFile.value = false
 
     onFilesDropped(event.dataTransfer.files)
   }

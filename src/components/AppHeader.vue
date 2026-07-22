@@ -1,3 +1,64 @@
+<script setup>
+// Die Kopfzeile der App: Logo, Navigation, "Neue Tierlist"-Button und
+// das ausklappbare Seitenmenü (Hamburger-Menü) rechts.
+import { ref } from 'vue'
+
+const emit = defineEmits(['go-home', 'open-saved-lists', 'new-tier-list', 'export', 'import-file'])
+
+// Steuert, ob das Seitenmenü (rechts eingeblendet) gerade offen ist
+const isMenuOpen = ref(false)
+
+// Referenz auf das versteckte Datei-Feld für den JSON-Import
+const jsonInputRef = ref(null)
+
+function openMenu() {
+  isMenuOpen.value = true
+}
+
+function closeMenu() {
+  isMenuOpen.value = false
+}
+
+function openSavedLists() {
+  // Menü zuerst schließen, dann App.vue Bescheid geben, dass das
+  // "Gespeicherte Tierlists"-Modal geöffnet werden soll
+  closeMenu()
+  emit('open-saved-lists')
+}
+
+function openNewTierList() {
+  closeMenu()
+  emit('new-tier-list')
+}
+
+// Export: Menü schließen und App.vue Bescheid geben (dort wird die JSON erzeugt)
+function exportTierList() {
+  closeMenu()
+  emit('export')
+}
+
+// Import: den versteckten Datei-Dialog öffnen
+function openJsonPicker() {
+  jsonInputRef.value.click()
+}
+
+// Wurde eine JSON-Datei gewählt, geben wir sie an App.vue weiter (dort wird
+// sie eingelesen und geprüft) und schließen das Menü.
+function handleJsonSelected(event) {
+  const file = event.target.files[0]
+
+  if (!file) {
+    return
+  }
+
+  emit('import-file', file)
+  closeMenu()
+
+  // Auswahl zurücksetzen, damit man dieselbe Datei danach erneut wählen kann
+  event.target.value = ''
+}
+</script>
+
 <template>
   <header class="top-header">
     <div class="header-shell">
@@ -139,67 +200,6 @@
     </div>
   </aside>
 </template>
-
-<script setup>
-// Die Kopfzeile der App: Logo, Navigation, "Neue Tierlist"-Button und
-// das ausklappbare Seitenmenü (Hamburger-Menü) rechts.
-import { ref } from 'vue'
-
-const emit = defineEmits(['go-home', 'open-saved-lists', 'new-tier-list', 'export', 'import-file'])
-
-// Steuert, ob das Seitenmenü (rechts eingeblendet) gerade offen ist
-const isMenuOpen = ref(false)
-
-// Referenz auf das versteckte Datei-Feld für den JSON-Import
-const jsonInputRef = ref(null)
-
-function openMenu() {
-  isMenuOpen.value = true
-}
-
-function closeMenu() {
-  isMenuOpen.value = false
-}
-
-function openSavedLists() {
-  // Menü zuerst schließen, dann App.vue Bescheid geben, dass das
-  // "Gespeicherte Tierlists"-Modal geöffnet werden soll
-  closeMenu()
-  emit('open-saved-lists')
-}
-
-function openNewTierList() {
-  closeMenu()
-  emit('new-tier-list')
-}
-
-// Export: Menü schließen und App.vue Bescheid geben (dort wird die JSON erzeugt)
-function exportTierList() {
-  closeMenu()
-  emit('export')
-}
-
-// Import: den versteckten Datei-Dialog öffnen
-function openJsonPicker() {
-  jsonInputRef.value.click()
-}
-
-// Wurde eine JSON-Datei gewählt, geben wir sie an App.vue weiter (dort wird
-// sie eingelesen und geprüft) und schließen das Menü.
-function handleJsonSelected(event) {
-  const file = event.target.files[0]
-
-  if (!file) {
-    return
-  }
-
-  emit('import-file', file)
-  closeMenu()
-
-  // Auswahl zurücksetzen, damit man dieselbe Datei danach erneut wählen kann
-  event.target.value = ''
-}
-</script>
 
 <style scoped>
 /* Das echte Datei-Feld für den Import bleibt unsichtbar, geöffnet wird es

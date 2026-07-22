@@ -9,10 +9,32 @@ import { TIER_COLOR_PALETTE } from '../data/tierColors'
 import { loadTierLists, saveTierLists } from '../storage/tierListStorage'
 import { downloadTierListAsJson } from '../utils/exportTierList'
 
-// Grenzen für die Anzahl der Tier-Reihen einer Tierlist (Aufgabe 6):
-// mindestens eine Reihe muss immer übrig bleiben, mehr als 20 wird unübersichtlich.
+// Grenzen für die Anzahl der Tier-Reihen einer Tierlist: mindestens eine
+// Reihe muss immer übrig bleiben, mehr als 20 wird unübersichtlich.
 const MIN_TIERS = 1
 const MAX_TIERS = 20
+
+// Baut eine frische, leere Tierlist. Wurde vorher an vier Stellen fast
+// gleich zusammengesetzt.
+//
+// Die id kommt von crypto.randomUUID() statt wie früher von Date.now():
+// Date.now() liefert Millisekunden, zwei Listen im selben Augenblick hätten
+// also dieselbe id bekommen — und deleteTierList filtert nach id, hätte
+// damit beide auf einmal gelöscht. Passt außerdem zu den ids von Items und
+// Tier-Reihen, die schon immer randomUUID nutzen.
+function createTierList(name) {
+  return {
+    id: crypto.randomUUID(),
+    name,
+    items: [],
+    tiers: createDefaultTiers(),
+  }
+}
+
+// Zählt, wie viele Items in den Tier-Reihen einer Tierlist einsortiert sind
+function countRankedItems(tiers) {
+  return tiers.reduce((total, tier) => total + tier.items.length, 0)
+}
 
 export function useTierLists() {
   // Beim Start versuchen, gespeicherte Daten aus dem localStorage zu laden.
@@ -35,12 +57,7 @@ export function useTierLists() {
 
   // Die Standard-Tierlist, die genutzt wird, wenn noch nichts gespeichert wurde.
   // Startet leer, damit man direkt seine eigenen Items hinzufügen kann.
-  const defaultTierList = {
-    id: 'default',
-    name: 'RankRoom Default',
-    items: [],
-    tiers: createDefaultTiers(),
-  }
+  const defaultTierList = createTierList('RankRoom Default')
 
   // tierLists = Liste ALLER Tierlisten, die der Nutzer angelegt hat
   const tierLists = ref(savedData ? savedData.tierLists : [defaultTierList])
@@ -87,11 +104,7 @@ export function useTierLists() {
   })
 
   // Anzahl der Items, die bereits in einer Tier-Reihe stecken
-  const rankedItemCount = computed(() => {
-    return tiers.value.reduce((total, tier) => {
-      return total + tier.items.length
-    }, 0)
-  })
+  const rankedItemCount = computed(() => countRankedItems(tiers.value))
 
   // Anzahl der Items, die noch im Pool liegen (nicht eingestuft)
   const unrankedItemCount = computed(() => {
@@ -107,11 +120,7 @@ export function useTierLists() {
   // für das "Gespeicherte Tierlists"-Modal
   const savedLists = computed(() => {
     return tierLists.value.map((tierList) => {
-      const rankedItems = tierList.tiers.reduce((total, tier) => {
-        return total + tier.items.length
-      }, 0)
-
-      const totalItems = rankedItems + tierList.items.length
+      const totalItems = countRankedItems(tierList.tiers) + tierList.items.length
 
       return {
         id: tierList.id,
@@ -203,7 +212,6 @@ export function useTierLists() {
     items.value.push(...itemsToAdd)
 
     return {
-      addedCount: itemsToAdd.length,
       duplicateNames,
       // Für die kurze Hervorhebung der neuen Karten (siehe useRecentlyAdded.js)
       addedIds: itemsToAdd.map((item) => item.id),
@@ -233,14 +241,20 @@ export function useTierLists() {
     item.name = trimmedName
   }
 
-  // Ob aktuell noch eine weitere Tier-Reihe hinzugefügt werden darf (Aufgabe 6)
+  // Sucht eine Tier-Reihe der aktiven Tierlist. Wird von allen Funktionen
+  // gebraucht, die eine einzelne Reihe ändern.
+  function findTier(tierId) {
+    return tiers.value.find((tier) => tier.id === tierId)
+  }
+
+  // Ob aktuell noch eine weitere Tier-Reihe hinzugefügt werden darf
   const canAddTierRow = computed(() => tiers.value.length < MAX_TIERS)
 
   // Ob aktuell eine Tier-Reihe gelöscht werden darf — es muss immer
   // mindestens eine Reihe übrig bleiben
   const canDeleteTierRow = computed(() => tiers.value.length > MIN_TIERS)
 
-  // Fügt der aktiven Tierlist eine neue, leere Tier-Reihe hinzu (Stift-Button
+  // Fügt der aktiven Tierlist eine neue, leere Tier-Reihe hinzu ("+"-Zeile
   // unterhalb der letzten Reihe). Die Farbe wird reihum aus der gemeinsamen
   // Palette gewählt, damit neue Reihen optisch zum Rest passen.
   function addTierRow() {
@@ -266,14 +280,14 @@ export function useTierLists() {
       return
     }
 
-    const tier = tiers.value.find((tier) => tier.id === tierId)
+    const tier = findTier(tierId)
 
     if (!tier) {
       return
     }
 
     items.value.push(...tier.items)
-    tiers.value = tiers.value.filter((tier) => tier.id !== tierId)
+    tiers.value = tiers.value.filter((entry) => entry.id !== tierId)
   }
 
   // Benennt eine Tier-Reihe um (Reihen-Einstellungen-Popover)
@@ -284,7 +298,7 @@ export function useTierLists() {
       return
     }
 
-    const tier = tiers.value.find((tier) => tier.id === tierId)
+    const tier = findTier(tierId)
 
     if (!tier) {
       return
@@ -295,7 +309,7 @@ export function useTierLists() {
 
   // Ändert die Farbe einer Tier-Reihe (Reihen-Einstellungen-Popover)
   function changeTierColor(tierId, newColor) {
-    const tier = tiers.value.find((tier) => tier.id === tierId)
+    const tier = findTier(tierId)
 
     if (!tier) {
       return
@@ -307,12 +321,7 @@ export function useTierLists() {
   // Erstellt eine neue, leere Tierlist mit dem angegebenen Namen und
   // macht sie sofort zur aktiven Tierlist
   function createNewTierList(newName) {
-    const newTierList = {
-      id: Date.now().toString(),
-      name: newName,
-      items: [],
-      tiers: createDefaultTiers(),
-    }
+    const newTierList = createTierList(newName)
 
     tierLists.value.push(newTierList)
     activeTierListId.value = newTierList.id
@@ -332,12 +341,7 @@ export function useTierLists() {
     // Wurde gerade die letzte verbleibende Tierlist gelöscht, legen wir eine
     // frische Default-Liste an, damit die App nie komplett leer dasteht
     if (tierLists.value.length === 0) {
-      const freshTierList = {
-        id: Date.now().toString(),
-        name: 'RankRoom Default',
-        items: [],
-        tiers: createDefaultTiers(),
-      }
+      const freshTierList = createTierList('RankRoom Default')
 
       tierLists.value.push(freshTierList)
       activeTierListId.value = freshTierList.id
@@ -366,7 +370,7 @@ export function useTierLists() {
   // keine Kollision mit bereits vorhandenen Listen/Items gibt.
   function importTierList(parsedTierList) {
     const newTierList = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: parsedTierList.name,
       items: parsedTierList.items.map((item) => ({
         id: crypto.randomUUID(),
