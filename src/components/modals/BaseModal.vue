@@ -49,7 +49,11 @@ defineEmits(['close'])
         </button>
       </div>
 
-      <slot />
+      <!-- Eigener Bereich, damit bei viel Inhalt NUR er scrollt und die
+           Überschrift oben stehen bleibt (siehe .modal-body im Style) -->
+      <div class="modal-body">
+        <slot />
+      </div>
     </div>
   </div>
 </template>
@@ -75,6 +79,23 @@ defineEmits(['close'])
 .modal {
   width: 100%;
   padding: 24px;
+
+  /* Das Popup darf nie höher werden als der Bildschirm — sonst laufen z. B.
+     viele gespeicherte Listen unten aus dem Bild heraus und man kommt nicht
+     mehr an sie heran. Die 48px sind der Innenabstand des Hintergrunds
+     (24px oben + 24px unten).
+
+     dvh statt vh: auf dem Handy ändert sich die sichtbare Höhe, wenn die
+     Adressleiste beim Scrollen ein- und ausfährt. vh rechnet dort mit der
+     GRÖSSTEN Höhe, das Popup wäre also zeitweise höher als das, was man
+     wirklich sieht. dvh nimmt die tatsächlich sichtbare Höhe. Die vh-Zeile
+     davor bleibt als Rückfall für ältere Browser stehen. */
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+
+  /* Damit die Überschrift feststeht und nur der Inhalt darunter scrollt */
+  display: flex;
+  flex-direction: column;
 
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 28px;
@@ -107,6 +128,19 @@ defineEmits(['close'])
     opacity: 1;
     transform: none;
   }
+}
+
+/* Der scrollbare Inhaltsbereich. min-height: 0 ist hier der entscheidende
+   Punkt: ohne ihn weigert sich ein Flex-Kind zu schrumpfen und wächst über
+   das Popup hinaus, statt zu scrollen. */
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  /* Etwas Luft rechts, damit der Inhalt nicht an der Bildlaufleiste klebt */
+  padding-right: 4px;
+  margin-right: -4px;
 }
 
 .modal-header {
@@ -162,6 +196,14 @@ defineEmits(['close'])
 @media (max-width: 600px) {
   .modal {
     padding: 20px;
+
+    /* Auf dem Handy ist der Hintergrund-Innenabstand kleiner (siehe unten) */
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+  }
+
+  .modal-backdrop {
+    padding: 16px;
   }
 
   .modal-header h2 {

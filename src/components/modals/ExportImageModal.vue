@@ -8,6 +8,8 @@ import {
   canShareFile,
   canvasToImageFile,
   downloadImageFile,
+  isTouchDevice,
+  openImageFile,
   renderTierListToCanvas,
   shareImageFile,
 } from '../../utils/exportTierListImage'
@@ -67,9 +69,16 @@ async function save() {
     return
   }
 
-  // Teilen zuerst versuchen; klappt es nicht (z. B. weil das Gerät es doch
-  // ablehnt), bleibt der normale Download als Rückfalllösung.
+  // Teilen zuerst versuchen — auf dem Handy der beste Weg.
   if (canShareFile(file) && (await shareImageFile(file))) {
+    return
+  }
+
+  // Auf dem Handy ohne Teilen-Menü das Bild wenigstens anzeigen. Ein
+  // normaler Download landet dort auf einer grauen Datei-Seite, auf der vom
+  // Bild nichts zu sehen ist.
+  if (isTouchDevice()) {
+    openImageFile(file)
     return
   }
 

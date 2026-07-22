@@ -227,11 +227,27 @@ export function canvasToImageFile(canvas, format, name) {
 // zusätzlich die Zeigerart: "coarse" heißt Finger statt Mauszeiger, trifft
 // also genau die Geräte, bei denen das Teilen-Menü der bessere Weg ist.
 export function canShareFile(file) {
-  if (!file || !navigator.canShare?.({ files: [file] })) {
-    return false
-  }
+  return Boolean(file && navigator.canShare?.({ files: [file] }) && isTouchDevice())
+}
 
+// Wird mit dem Finger bedient (Handy/Tablet) statt mit der Maus?
+// "coarse" beschreibt einen ungenauen Zeiger — also einen Finger.
+export function isTouchDevice() {
   return window.matchMedia?.('(pointer: coarse)').matches ?? false
+}
+
+// Zeigt das Bild in einem neuen Tab an, statt es herunterzuladen.
+//
+// Rückfalllösung für Handys, auf denen das Teilen-Menü nicht zur Verfügung
+// steht (ältere iOS-Versionen, In-App-Browser). Ein normaler Download endet
+// dort auf einer grauen Datei-Seite, auf der das Bild gar nicht zu sehen
+// ist — so wird es wenigstens angezeigt und lässt sich per langem Tippen
+// sichern.
+//
+// Die URL wird bewusst NICHT sofort wieder freigegeben: der neue Tab lädt
+// sie erst noch. Der Browser räumt sie beim Schließen der Seite selbst auf.
+export function openImageFile(file) {
+  window.open(URL.createObjectURL(file), '_blank')
 }
 
 // Öffnet das System-Teilen-Menü. Bricht der Nutzer ab, ist das kein Fehler.
