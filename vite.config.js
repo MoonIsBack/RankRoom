@@ -72,6 +72,25 @@ const CONTENT_SECURITY_POLICY = [
 // deshalb technisch nicht erreichbar. Die Zeile hier wegzulassen ist ehrlicher,
 // als etwas einzubauen, das nachweislich nichts tut. Bei einem späteren Umzug
 // auf einen eigenen Hoster gehört sie als echter Header nachgerüstet.
+//
+// AUS DEMSELBEN GRUND FEHLEN DIESE DREI — bewusst, nicht vergessen:
+//
+//   Referrer-Policy      würde verhindern, dass beim Weiterklicken die genaue
+//                        Herkunftsadresse mitgeschickt wird. RankRoom verlinkt
+//                        derzeit ohnehin nirgendwohin nach außen, der Verlust
+//                        ist also klein — nachrüsten, sobald externe Links
+//                        dazukommen.
+//   Permissions-Policy   würde Kamera, Mikrofon und Standort ausdrücklich
+//                        abschalten. RankRoom fragt keines davon ab, das ist
+//                        also nur zusätzliche Absicherung, keine Lücke.
+//   HSTS                 erzwingt HTTPS für künftige Aufrufe. GitHub Pages
+//                        liefert eigene Domains ohnehin nur über HTTPS aus.
+//
+// Alle drei sind ausschließlich als HTTP-Header wirksam und lassen sich bei
+// einem statischen Hoster ohne Header-Konfiguration nicht setzen. Sie hier als
+// Meta-Angabe hinzuschreiben würde nichts bewirken und nur Schein-Sicherheit
+// vortäuschen. Beim Umzug auf einen eigenen Hoster gehören sie mit auf die
+// Liste.
 function cspPlugin() {
   return {
     name: 'rankroom-csp',

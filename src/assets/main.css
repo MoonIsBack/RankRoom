@@ -47,3 +47,21 @@ button,
 input {
   font-family: inherit;
 }
+
+/* Auf Geräten mit Fingerbedienung ("coarse" = ungenauer Zeiger) zoomt mobiles
+   Safari beim Antippen eines Eingabefelds automatisch in die Seite hinein,
+   sobald dessen Schrift kleiner als 16px ist. Früher wurde das durch eine
+   Zoom-Sperre im Viewport unterdrückt — die sperrte aber auch das absichtliche
+   Aufziehen mit zwei Fingern aus und war damit eine echte Barriere für
+   Menschen, die schlecht sehen.
+   Jetzt wird stattdessen die Ursache behoben: 16px ist die Untergrenze,
+   größere Schriften bleiben unangetastet. Bewusst hier zentral statt in jeder
+   Komponente einzeln, damit auch künftige Eingabefelder es automatisch
+   richtig machen. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}

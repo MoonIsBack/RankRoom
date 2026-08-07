@@ -3,10 +3,20 @@
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/rankroom-icon.svg">
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <!--
+      BEWUSST OHNE maximum-scale UND user-scalable=no.
+
+      Beides sperrt auf dem Handy das Aufziehen mit zwei Fingern. Für Menschen,
+      die schlecht sehen, ist der Zoom aber oft der einzige Weg, eine Seite
+      überhaupt lesen zu können — deshalb gilt eine solche Sperre als echte
+      Barriere (WCAG 2.1, Kriterium 1.4.4 "Textgröße ändern").
+
+      Der übliche Grund, sie trotzdem einzubauen, ist das automatische
+      Hineinzoomen von iOS beim Antippen eines Eingabefelds. Das passiert nur
+      bei einer Schriftgröße unter 16px im Feld — der richtige Hebel ist also
+      die Schriftgröße der Eingabefelder, nicht das Aussperren aller Nutzer.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RankRoom</title>
   </head>
   <body>
