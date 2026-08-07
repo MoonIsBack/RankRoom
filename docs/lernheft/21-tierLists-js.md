@@ -1,6 +1,6 @@
-# 📌 tierListStorage.js
+# 📌 tierLists.js
 
-`src/storage/tierListStorage.js` — 144 Zeilen
+`src/storage/tierLists.js` — 144 Zeilen
 
 ## Aufgabe
 

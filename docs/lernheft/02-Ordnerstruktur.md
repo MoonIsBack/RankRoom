@@ -11,7 +11,7 @@ RankRoom/
 ├── index.html            Einstiegspunkt (fast leer, Vue füllt ihn)
 ├── package.json          Abhängigkeiten + Befehle (npm run ...)
 ├── vite.config.js        Build-Einstellungen + Sicherheitsregel (CSP)
-├── LEGAL_AND_PRIVACY_SETUP.md   Anleitung für alles Rechtliche
+├── RECHTLICHES.md        Anleitung für alles Rechtliche
 │
 ├── public/               Dateien, die 1:1 mitkopiert werden
 │   └── rankroom-icon.svg      Das Logo
@@ -28,11 +28,11 @@ RankRoom/
     │   ├── tierlist/     Die Tierlist selbst: Reihen, Karten, Vorrat
     │   ├── legal/        Rechtliche Seiten
     │   └── modals/       Popups
-    ├── composables/      Wiederverwendbare Logik ohne Aussehen
+    ├── composables/      Logik MIT Vue (ref, watch) — heißen useXxx
     ├── config/           legalConfig.js — Schalter fürs Rechtliche
     ├── data/             Feste Vorgaben (Standard-Reihen, Farben)
     ├── storage/          Zugriff auf den Browser-Speicher
-    └── utils/            Reine Hilfsfunktionen
+    └── utils/            Reine Funktionen OHNE Vue (+ ihre Tests)
 ```
 
 ## Was gehört wohin?

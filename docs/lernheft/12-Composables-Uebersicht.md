@@ -2,27 +2,30 @@
 
 ## Wofür ist das?
 
-Ein Composable ist **wiederverwendbare Logik ohne eigenes Aussehen**. Erkennbar am
-Namen: fängt mit `use` an.
+Ein Composable ist **wiederverwendbare Logik, die Vue benutzt** — also `ref`,
+`reactive`, `computed` oder `watch`. Erkennbar am Namen: fängt mit `use` an und
+exportiert auch eine Funktion, die so heißt.
+
+Das ist die einzige Regel für diesen Ordner. Wenn eine Datei kein Vue braucht,
+gehört sie nach `utils/` — siehe unten.
 
 ## Alle Composables
 
 | Datei | Zeilen | Aufgabe |
 |---|---|---|
-| `useTierLists.js` | 549 | ⭐ Alles rund um Tierlisten |
-| `usePointerDrag.js` | 656 | ⭐ Karten ziehen |
+| `useTierLists.js` | 566 | ⭐ Alles rund um Tierlisten |
+| `usePointerDrag.js` | 607 | ⭐ Karten ziehen |
 | `useRowPointerDrag.js` | 169 | Reihen umsortieren |
-| `useAutoScroll.js` | 80 | Scrollen am Bildschirmrand |
-| `useImageUpload.js` | 217 | Bilder einlesen + EXIF entfernen |
-| `useFileDropZone.js` | 74 | Dateien auf die Seite ziehen |
 | `useLegalPages.js` | 157 | Rechtsseiten + Adressen |
+| `useFileDropZone.js` | 74 | Dateien auf die Seite ziehen |
 | `useRecentlyAdded.js` | 49 | Grüner Ring bei neuen Items |
 | `useRemovingItems.js` | 43 | Rotes Verblassen beim Löschen |
-| `useTextSelection.js` | 28 | Textmarkierung beim Ziehen unterdrücken |
+
+Sieben Stück — und alle sieben halten sich an die Regel.
 
 ## Wer benutzt was?
 
-Fast alle werden in **`App.vue`** aufgerufen:
+Alle werden in **`App.vue`** aufgerufen:
 
 ```js
 const { items, tiers, addItem, ... } = useTierLists()
@@ -33,11 +36,6 @@ const { markAsNew, highlightDelayFor } = useRecentlyAdded()
 const { startRemoving, isRemoving } = useRemovingItems(deleteItem)
 const { isDraggingFile, handleDrop, ... } = useFileDropZone(handleImageFiles)
 ```
-
-**Ausnahmen:**
-- `useAutoScroll.js` wird von den beiden Drag-Composables benutzt, nicht von App.vue
-- `useTextSelection.js` ebenso
-- `useImageUpload.js` exportiert nur Funktionen, kein `use...()`-Aufruf
 
 ## Das Grundmuster
 
@@ -60,16 +58,27 @@ zweimal auf, hast du zwei getrennte Zustände, die nichts voneinander wissen.
 **Deshalb wird jedes genau einmal in `App.vue` aufgerufen** und das Ergebnis nach
 unten weitergereicht.
 
+## Warum drei Dateien hier weggezogen sind
+
+Früher lagen auch diese drei in `composables/`:
+
+| Früher | Heute | Warum |
+|---|---|---|
+| `useAutoScroll.js` | `utils/autoScroll.js` | benutzt kein Vue |
+| `useImageUpload.js` | `utils/imageImport.js` | benutzt kein Vue |
+| `useTextSelection.js` | `utils/textSelection.js` | benutzt kein Vue |
+
+Sie hießen `use...`, benutzten aber weder `ref` noch `watch` — und exportierten
+teils gar keine `use`-Funktion. `useAutoScroll.js` exportierte zum Beispiel
+`createAutoScroll()`. Wer beim Vue-Lernen darauf stößt, sucht nach einer Regel,
+die es nicht gibt.
+
+**Der Prüfsatz für neue Dateien:** Kommt in der Datei `ref`, `reactive`,
+`computed` oder `watch` vor?
+
+- **Ja** → `composables/`, Name `useXxx.js`
+- **Nein** → `utils/`, Name sagt schlicht, was sie tut
+
 ## 💡 Merken
 
-**Wenn Logik in zwei Komponenten gebraucht wird → Composable.**
-**Wenn sie nur in einer gebraucht wird → darf in der Komponente bleiben.**
-
-## Die Sonderrolle von `useAutoScroll.js`
-
-Diese Datei heißt zwar `use...`, exportiert aber `createAutoScroll()` statt
-`useAutoScroll()`. Das ist Absicht: Sowohl das Karten-Ziehen als auch das
-Reihen-Ziehen brauchen **jeweils eigenes** Auto-Scrolling, unabhängig voneinander.
-
-Deshalb wird es zweimal erzeugt — einmal in `usePointerDrag.js`, einmal in
-`useRowPointerDrag.js`.
+**`composables/` heißt: hier ist Vue drin.** Nichts anderes steht in diesem Ordner.

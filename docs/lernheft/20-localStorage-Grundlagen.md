@@ -65,7 +65,7 @@ Ein Handyfoto mit 4 MB wird zu ca. 5,3 MB Text. Bei 6–8 MB Gesamtplatz passen 
 **ein oder zwei Fotos**, dann ist Schluss.
 
 **Genau deshalb** werden Bilder beim Einlesen auf 1600 px verkleinert.
-→ `31-EXIF-Entfernung`
+→ `31-EXIF-Entfernung` (geplant)
 
 ## Was schiefgehen kann
 
@@ -75,7 +75,7 @@ Ein Handyfoto mit 4 MB wird zu ca. 5,3 MB Text. Bei 6–8 MB Gesamtplatz passen 
 | Daten beschädigt | Abbruch beim Schreiben | Startet mit leerer Liste + Hinweis |
 | Speicher gesperrt | Privater Modus | Läuft weiter, speichert nur nicht |
 
-Alle drei sind abgefangen → `21-tierListStorage-js`
+Alle drei sind abgefangen → `21-tierLists-js`
 
 ## Selbst nachschauen
 

@@ -24,7 +24,7 @@ Layout, das man gerade misst. Ergebnis war früher wildes Flackern.
 *warum* etwas so ist. Ändere immer nur **eine** Konstante und teste danach sofort
 mit Maus **und** Finger.
 
-→ `36-usePointerDrag-js`
+→ `36-usePointerDrag-js` (geplant)
 
 ---
 
@@ -38,7 +38,7 @@ manipulierte JSON-Datei Unsinn in die App schleust.
 **Ausnahme:** Die **Zahlen** oben in der Datei darfst du anpassen. Nur die Logik
 darunter nicht.
 
-→ `50-validation-js`
+→ `50-validation-js` (geplant)
 
 ---
 
@@ -53,11 +53,11 @@ mehr lesen**. Und die Dateien deiner Nutzer auch nicht.
 `CURRENT_FORMAT_VERSION` erhöhst du nur, wenn du das Dateiformat wirklich änderst —
 und dann musst du gleichzeitig eine Umwandlung für alte Dateien einbauen.
 
-→ `25-Versionierung`
+→ `25-Versionierung` (geplant)
 
 ---
 
-## 4. `tierListStorage.js`
+## 4. `tierLists.js`
 
 **Warum nicht anfassen:**
 Jede Zeile fängt einen Fehlerfall ab, der vorher zum Absturz führte:
@@ -68,7 +68,7 @@ Jede Zeile fängt einen Fehlerfall ab, der vorher zum Absturz führte:
 
 Das sieht nach viel `try/catch` aus, aber jedes einzelne hat einen Grund.
 
-→ `21-tierListStorage-js`
+→ `21-tierLists-js`
 
 ---
 
@@ -80,7 +80,7 @@ Escape, Fokusfalle, Fokusrückgabe.
 
 Eine Änderung hier wirkt überall. Das CSS darunter darfst du dagegen gern anpassen.
 
-→ `61-BaseModal-vue`
+→ `61-BaseModal-vue` (geplant)
 
 ---
 
@@ -94,11 +94,11 @@ Zwei Zeilen sind lebenswichtig:
 - `style-src 'self' 'unsafe-inline'` — ohne das klebt die gezogene Karte an der
   falschen Stelle
 
-→ `51-Content-Security-Policy`
+→ `51-Content-Security-Policy` (geplant)
 
 ---
 
-## 7. `useAutoScroll.js`
+## 7. `autoScroll.js`
 
 **Warum nicht anfassen:**
 Sehr kleine Datei, aber die Zahlen sind eingestellt, bis es sich gut anfühlte.

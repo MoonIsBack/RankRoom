@@ -13,7 +13,7 @@ Das ist die wichtigste Seite im ganzen Heft. Wenn du **nur eine** liest, dann di
 ## Bild im Kopf
 
 ```
-        useTierLists.js  ←→  tierListStorage.js  ←→  localStorage
+        useTierLists.js  ←→  tierLists.js  ←→  localStorage
                ↓
             App.vue   ←── usePointerDrag.js (Drag & Drop)
           /    |    \  ←── useLegalPages.js (Rechtsseiten)
@@ -52,7 +52,7 @@ Weil du dann bei einem Fehler **weißt, wo du suchen musst**:
 |---|---|
 | Sieht falsch aus | Der Komponente |
 | Falscher Wert | `useTierLists.js` |
-| Nach Neuladen weg | `tierListStorage.js` |
+| Nach Neuladen weg | `tierLists.js` |
 | Karte landet falsch | `usePointerDrag.js` |
 | Rechtsseite fehlt | `legalConfig.js` |
 
@@ -70,4 +70,4 @@ und wenn eine davon einen Fehler hat, findest du ihn nie.
 ## Siehe auch
 
 - `04-Datenfluss` — genauer, mit mehr Beispielen
-- `60-App-vue` — die Zentrale im Detail
+- `60-App-vue` (geplant) — die Zentrale im Detail

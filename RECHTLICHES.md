@@ -382,7 +382,7 @@ gleich zusammen mit `Referrer-Policy`, `Permissions-Policy` und HSTS.
 
 ### EXIF-Entfernung
 
-`src/composables/useImageUpload.js`. Jedes eingelesene Bild wird über ein Canvas neu
+`src/composables/imageImport.js`. Jedes eingelesene Bild wird über ein Canvas neu
 gezeichnet und dabei auf **1600 Pixel** längste Kante begrenzt (`MAX_IMAGE_DIMENSION`
 in `src/utils/validation.js`). Dabei bleiben nur die sichtbaren Bildpunkte übrig —
 GPS-Koordinaten, Aufnahmezeit und Kameramodell fallen weg.

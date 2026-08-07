@@ -17,7 +17,7 @@ Nutzer tippt Namen ein
         • Grenze prüfen        (max. 500 Items)
         • ins Array schieben
    → watch bemerkt die Änderung
-   → tierListStorage.js: saveTierLists()
+   → tierLists.js: saveTierLists()
    → localStorage
 ```
 
@@ -41,7 +41,7 @@ Finger/Maus drückt auf Karte
 Browser lädt die Seite
    → main.js startet Vue
    → App.vue ruft useTierLists() auf
-   → tierListStorage.js: loadTierLists()
+   → tierLists.js: loadTierLists()
         • Daten lesen
         • prüfen ob sie plausibel sind
         • bei Müll: null + recovered: true

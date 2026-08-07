@@ -2,19 +2,39 @@
 
 ## Wofür ist das?
 
-Utilities sind **reine Hilfsfunktionen**: Du steckst etwas rein, es kommt etwas
-raus. Sie merken sich nichts und ändern nichts an der App.
+In `src/utils/` steht alles, was **kein Vue braucht**. Kein `ref`, kein `watch` —
+darum sind es auch keine Composables (→ `12-Composables-Uebersicht`).
 
-## Alle Utilities (`src/utils/`)
+Innerhalb des Ordners gibt es zwei Sorten. Der Unterschied ist wichtig, weil nur
+die erste Sorte sich einfach testen lässt.
+
+## Sorte 1: reine Rechenfunktionen
+
+Rein rein, raus raus. Keine Nebenwirkungen, kein Gedächtnis. **Diese haben Tests.**
+
+| Datei | Zeilen | Aufgabe | Test |
+|---|---|---|---|
+| `validation.js` | 138 | Grenzwerte und Prüfungen | ✅ 17 Tests |
+| `dragGeometry.js` | 69 | Rechteck-Rechnerei fürs Ziehen | ✅ 14 Tests |
+| `fileName.js` | 11 | Sicheren Dateinamen erzeugen | ✅ 6 Tests |
+| `tierListFormat.js` | 24 | Format-Kennung und Version | ✅ 3 Tests |
+
+Die Testdatei liegt jeweils direkt daneben: `validation.js` → `validation.test.js`.
+Ausführen mit `npm test`.
+
+## Sorte 2: arbeiten mit Browser oder Dateien
+
+Kein Vue, aber sie **bewirken etwas** — sie zeichnen, laden herunter oder fassen
+das Dokument an. Deshalb keine Tests: Die bräuchten einen echten Browser.
 
 | Datei | Zeilen | Aufgabe |
 |---|---|---|
-| `exportTierList.js` | 46 | Liste als JSON herunterladen |
-| `importTierList.js` | 188 | JSON-Datei einlesen und **prüfen** |
-| `exportTierListImage.js` | 281 | Liste als Bild zeichnen |
-| `tierListFormat.js` | 16 | Format-Kennung und Version |
-| `fileName.js` | 12 | Sicheren Dateinamen erzeugen |
-| `validation.js` | 134 | Grenzwerte und Prüfungen |
+| `exportAsImage.js` | 281 | Liste als Bild zeichnen und speichern |
+| `imageImport.js` | 217 | Bilder einlesen + EXIF entfernen |
+| `importFromJson.js` | 188 | JSON-Datei einlesen und **prüfen** |
+| `autoScroll.js` | 80 | Scrollen am Bildschirmrand beim Ziehen |
+| `exportAsJson.js` | 40 | Liste als JSON herunterladen |
+| `textSelection.js` | 28 | Textmarkierung beim Ziehen unterdrücken |
 
 ## Kurz erklärt
 
@@ -53,36 +73,42 @@ stimmt — so erkennt RankRoom eine fremde JSON-Datei.
 Alle Grenzwerte an einer Stelle. Die **Zahlen** darfst du anpassen, die
 **Funktionen** besser nicht.
 
-→ `50-validation-js`
+→ `50-validation-js` (geplant)
 
 ---
 
-### Die drei Export/Import-Dateien
+### `dragGeometry.js`
+
+Die Rechnerei hinter dem Ziehen: Wo liegt ein Rechteck im Dokument, wenn die Seite
+gescrollt ist? Liegt der Finger noch in dieser Reihe?
+
+Lag früher mitten in `usePointerDrag.js`. Dort war sie schwer zu finden und gar
+nicht zu testen — jetzt ist sie beides.
+
+---
+
+### Die Export/Import-Dateien
 
 Bekommen eigene Seiten:
-- `23-Export-JSON`
-- `24-Import-JSON`
-- `32-Bild-Export`
+- `23-Export-JSON` (geplant)
+- `24-Import-JSON` (geplant)
+- `32-Bild-Export` (geplant)
 
-## Warum überhaupt Utilities?
+Die Namen sind bewusst nach dem gleichen Muster gebaut, damit man sie beim
+Überfliegen unterscheiden kann:
 
-Weil man sie **überall benutzen kann, ohne Nebenwirkungen zu befürchten**.
-
-`sanitizeFileBaseName()` kannst du hundertmal aufrufen — es passiert nichts weiter.
-Bei `addItem()` aus `useTierLists.js` wäre das anders: Da ändern sich Daten.
+```
+exportAsJson.js     raus als JSON
+exportAsImage.js    raus als Bild
+importFromJson.js   rein aus JSON
+```
 
 ## 💡 Merken
 
-**Test für „ist das ein Utility?":**
-Kannst du die Funktion zweimal hintereinander mit derselben Eingabe aufrufen und
-bekommst zweimal dasselbe Ergebnis, ohne dass sich sonst etwas ändert?
+**Der Test für „gehört das nach `utils/`?":**
+Kommt in der Datei `ref`, `reactive`, `computed` oder `watch` vor?
 
-→ Ja = Utility. Nein = gehört woanders hin.
+→ Nein = `utils/`. Ja = `composables/`.
 
-## ⚠ Eine Ausnahme
-
-`exportTierList.js` und `exportTierListImage.js` **lösen einen Download aus** —
-das ist streng genommen eine Nebenwirkung.
-
-Sie stehen trotzdem hier, weil sie nichts am Zustand der App ändern. Das ist eine
-pragmatische Entscheidung, keine reine Lehre.
+**Und danach:** Rechnet die Datei nur, oder fasst sie den Browser an? Nur rechnen
+= Sorte 1 und sie sollte einen Test bekommen.

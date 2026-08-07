@@ -9,7 +9,7 @@ Zwei kleine Ordner, die feste Werte enthalten — kein Code, der etwas tut.
 ## `src/config/legalConfig.js`
 
 Der einzige Ort für alles Rechtliche. Bekommt eine eigene Seite:
-→ `40-legalConfig-js`
+→ `40-legalConfig-js` (geplant)
 
 ---
 

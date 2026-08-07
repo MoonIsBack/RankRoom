@@ -102,7 +102,7 @@ automatische Neuladen, die CSP würde die blockieren.
 mit `npm run build && npm run preview`. Sonst merkst du erst nach dem Hochladen,
 dass die CSP es blockiert.
 
-→ `51-Content-Security-Policy`
+→ `51-Content-Security-Policy` (geplant)
 
 ## 💡 Merken
 

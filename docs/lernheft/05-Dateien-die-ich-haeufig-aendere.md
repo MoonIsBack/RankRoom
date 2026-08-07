@@ -18,7 +18,7 @@ verbessern oder umstellen willst.
 **Beachte:** Das Impressum erscheint erst, wenn Name **und** Anschrift ausgefüllt
 sind — der Schalter allein reicht nicht.
 
-→ `40-legalConfig-js`
+→ `40-legalConfig-js` (geplant)
 
 ---
 
@@ -60,7 +60,7 @@ S/A/B/C/D (siehe `defaultTiers.js`). Änderst du Farbe 1, ändert sich also auch
 (Werbung, Analyse …), **musst** du den Text anpassen. Eine Datenschutzerklärung, die
 etwas verschweigt, ist ein Problem.
 
-→ `42-Datenschutzerklaerung`
+→ `42-Datenschutzerklaerung` (geplant)
 
 ---
 
@@ -105,7 +105,7 @@ Die **Funktionen** in dieser Datei fasst du dagegen fast nie an → `06-Dateien-
 `emit(...)` hier, und ein `@...` in `App.vue`. Vergisst du das Letzte, passiert
 beim Klick einfach nichts.
 
-→ `63-AppHeader-und-Burger-Menue`
+→ `63-AppHeader-und-Burger-Menue` (geplant)
 
 ---
 

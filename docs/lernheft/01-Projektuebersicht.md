@@ -50,7 +50,7 @@ einbaust, das diese Eigenschaft kaputtmacht (Konten, Cloud, Werbung), dann wird
 plötzlich vieles kompliziert: Datenschutzerklärung, Einwilligung, Serverkosten,
 Sicherheit.
 
-→ Details dazu: `48-Wann-aktiviere-ich-was`
+→ Details dazu: `48-Wann-aktiviere-ich-was` (geplant) — bis dahin: `RECHTLICHES.md`
 
 ## Größenordnung
 

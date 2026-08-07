@@ -40,11 +40,16 @@ src/
     tierlist/    Die Tierlist selbst: Reihen, Karten, Vorrat
     legal/       Rechtliche Seiten
     modals/      Popups, alle auf Basis von BaseModal.vue
-  composables/   Wiederverwendbare Logik ohne eigenes Aussehen
-  utils/         Reine Hilfsfunktionen (Export, Import, Dateinamen)
+  composables/   Logik MIT Vue (ref, watch) — heißen alle useXxx
+  utils/         Funktionen OHNE Vue (Export, Import, Prüfungen) + Tests
   storage/       Zugriff auf den localStorage
+  config/        Schalter fürs Rechtliche
   data/          Feste Vorgaben (Standard-Reihen, Farbpalette)
 ```
+
+Die Trennung zwischen `composables/` und `utils/` folgt genau einer Regel:
+Kommt in der Datei `ref`, `reactive`, `computed` oder `watch` vor, gehört sie
+nach `composables/` — sonst nach `utils/`.
 
 Die beiden wichtigsten Bausteine sind `composables/usePointerDrag.js`
 (Drag & Drop der Item-Karten) und `composables/useTierLists.js` (alles rund

@@ -24,10 +24,10 @@ const { items, tiers, addItem, ... } = useTierLists()
 
 ## Welche Dateien benutzt sie?
 
-- `tierListStorage.js` — speichern und laden
+- `tierLists.js` — speichern und laden
 - `defaultTiers.js` — Standard-Reihen erzeugen
 - `tierColors.js` — Farbe für neue Reihen
-- `exportTierList.js` — JSON-Download
+- `exportAsJson.js` — JSON-Download
 - `validation.js` — Namen säubern, Grenzen prüfen
 
 ## Der Zustand
@@ -129,4 +129,4 @@ längerem benutzen.
 ## 💡 Merken
 
 **Wenn ein Wert falsch ist → hier suchen.**
-**Wenn er nach dem Neuladen falsch ist → in `tierListStorage.js` suchen.**
+**Wenn er nach dem Neuladen falsch ist → in `tierLists.js` suchen.**
