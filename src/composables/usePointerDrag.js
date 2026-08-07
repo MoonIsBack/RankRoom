@@ -18,6 +18,7 @@ import { reactive, ref } from 'vue'
 
 import { createAutoScroll } from './useAutoScroll'
 import { restoreTextSelection, suppressTextSelection } from './useTextSelection'
+import { containsPoint, grownRect, toDocRect, withinVerticalBand } from '../utils/dragGeometry'
 
 // Ab wie viel Bewegung (in Pixel) ein Drag "scharf" geschaltet wird. Bei
 // Touch etwas großzügiger, weil Finger weniger präzise sind als eine Maus.
@@ -176,18 +177,6 @@ export function usePointerDrag(items, tiers) {
     return snapshot
   }
 
-  // Fenster-relatives Rect -> dokument-relativ (siehe captureLayout)
-  function toDocRect(rect) {
-    return {
-      left: rect.left,
-      right: rect.right,
-      width: rect.width,
-      height: rect.height,
-      top: rect.top + window.scrollY,
-      bottom: rect.bottom + window.scrollY,
-    }
-  }
-
   // Wird beim Antippen/Klicken einer Karte aufgerufen (aus ItemCard, über
   // ItemPool/TierRow nach oben gereicht). Startet noch KEINEN Drag — erst
   // wenn sich der Zeiger genug bewegt (siehe handlePointerMove).
@@ -344,44 +333,6 @@ export function usePointerDrag(items, tiers) {
     }
 
     return null
-  }
-
-  // Das eingefrorene Rechteck einer Zone, erweitert um das, was die Zone
-  // inzwischen tatsächlich einnimmt.
-  //
-  // Der eine Fall, in dem das Einfrieren allein nicht reicht: schiebt man eine
-  // Karte in eine Reihe, die bereits genau voll ist, bekommt diese Reihe durch
-  // den Platzhalter eine ZWEITE ZEILE und wird dadurch höher. Die neue Zeile
-  // liegt aber unterhalb des eingefrorenen Rechtecks — dort hätte nach den
-  // alten Werten schon die nächste Reihe angefangen. Man konnte die Karte
-  // deshalb nur in die obere Zeile legen, nicht in die neu entstandene.
-  //
-  // Gemessen wird nur für die Zone, die ohnehin schon anvisiert ist, und das
-  // Rechteck kann dadurch ausschließlich WACHSEN. Ein Aufschaukeln ist damit
-  // ausgeschlossen: die Messung kann die Zone nie wechseln, nur halten.
-  function grownRect(entry) {
-    if (!entry.el) {
-      return entry.rect
-    }
-
-    const live = toDocRect(entry.el.getBoundingClientRect())
-
-    return {
-      left: Math.min(entry.rect.left, live.left),
-      right: Math.max(entry.rect.right, live.right),
-      top: Math.min(entry.rect.top, live.top),
-      bottom: Math.max(entry.rect.bottom, live.bottom),
-    }
-  }
-
-  function containsPoint(rect, x, docY, margin) {
-    return (
-      x >= rect.left - margin && x <= rect.right + margin && withinVerticalBand(rect, docY, margin)
-    )
-  }
-
-  function withinVerticalBand(rect, docY, margin) {
-    return docY >= rect.top - margin && docY <= rect.bottom + margin
   }
 
   // Hält fest, ob gerade nach links oder rechts gezogen wird. Der Anker
