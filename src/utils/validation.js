@@ -62,7 +62,11 @@ const CONTROL_CHARACTERS = /\p{Cc}/gu
 // Macht aus einer beliebigen Eingabe einen sauberen, begrenzten Namen.
 // Gibt einen leeren String zurück, wenn nichts Brauchbares übrig bleibt —
 // die aufrufende Stelle entscheidet dann, was damit passiert.
-export function sanitizeName(value, maxLength) {
+//
+// Bewusst NICHT exportiert: Von außen soll immer eine der drei benannten
+// Varianten darunter benutzt werden, damit die passende Obergrenze
+// automatisch mitkommt und niemand versehentlich eine eigene wählt.
+function sanitizeName(value, maxLength) {
   if (typeof value !== 'string') {
     return ''
   }

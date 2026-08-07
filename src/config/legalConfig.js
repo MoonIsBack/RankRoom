@@ -176,7 +176,11 @@ function isFilledIn(value) {
 
 // Sind alle Pflichtangaben für ein Impressum wirklich vorhanden?
 // Pflicht sind nach § 18 Abs. 1 MStV Name und (ladungsfähige) Anschrift.
-export function isImprintComplete() {
+//
+// Bewusst NICHT exportiert: Ob das Impressum erscheint, entscheidet allein
+// canShowImprint() weiter unten. Gäbe es zwei Wege, die Frage zu stellen,
+// könnte an einer Stelle die Vollständigkeitsprüfung übersprungen werden.
+function isImprintComplete() {
   return (
     isFilledIn(operatorInfo.name) &&
     isFilledIn(operatorInfo.street) &&
