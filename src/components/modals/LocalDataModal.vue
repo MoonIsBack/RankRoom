@@ -15,7 +15,7 @@
 import { ref } from 'vue'
 
 import BaseModal from './BaseModal.vue'
-import { isStorageAvailable } from '../../storage/tierListStorage'
+import { isStorageAvailable } from '../../storage/tierLists'
 
 const props = defineProps({
   // Anzahl gespeicherter Tierlisten

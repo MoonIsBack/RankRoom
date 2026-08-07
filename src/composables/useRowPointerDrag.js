@@ -14,8 +14,8 @@
 // bei Touch dieselbe einfache Distanz-Schwelle wie bei der Maus.
 import { ref } from 'vue'
 
-import { createAutoScroll } from './useAutoScroll'
-import { restoreTextSelection, suppressTextSelection } from './useTextSelection'
+import { createAutoScroll } from '../utils/autoScroll'
+import { restoreTextSelection, suppressTextSelection } from '../utils/textSelection'
 
 const MOUSE_ARM_DISTANCE = 6
 const TOUCH_ARM_DISTANCE = 8

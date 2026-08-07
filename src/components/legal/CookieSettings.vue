@@ -15,7 +15,7 @@
 // Sobald wirklich einmal ein einwilligungspflichtiger Dienst dazukommt (Werbung,
 // Analyse, eingebettete Videos), muss das hier durch eine echte Umsetzung
 // ersetzt werden. Die Anforderungen dafür stehen in Abschnitt 8 von
-// LEGAL_AND_PRIVACY_SETUP.md — insbesondere: optionale Dienste dürfen erst NACH
+// RECHTLICHES.md — insbesondere: optionale Dienste dürfen erst NACH
 // der Einwilligung geladen werden, und Ablehnen muss genauso einfach sein wie
 // Zustimmen.
 import { ref } from 'vue'

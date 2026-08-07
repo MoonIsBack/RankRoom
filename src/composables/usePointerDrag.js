@@ -16,8 +16,8 @@
 // damit dieses Composable nicht selbst wissen muss, woher die Daten kommen.
 import { reactive, ref } from 'vue'
 
-import { createAutoScroll } from './useAutoScroll'
-import { restoreTextSelection, suppressTextSelection } from './useTextSelection'
+import { createAutoScroll } from '../utils/autoScroll'
+import { restoreTextSelection, suppressTextSelection } from '../utils/textSelection'
 import { containsPoint, grownRect, toDocRect, withinVerticalBand } from '../utils/dragGeometry'
 
 // Ab wie viel Bewegung (in Pixel) ein Drag "scharf" geschaltet wird. Bei
@@ -137,7 +137,7 @@ export function usePointerDrag(items, tiers) {
   //
   // Alle Y-Werte werden DOKUMENT-relativ gespeichert (Rect + window.scrollY):
   // scrollt die Seite während des Ziehens (Auto-Scroll am Bildschirmrand,
-  // siehe useAutoScroll.js), bliebe ein fenster-relativer Schnappschuss sonst
+  // siehe autoScroll.js), bliebe ein fenster-relativer Schnappschuss sonst
   // an der alten Stelle hängen. Die Zeiger-Y-Position wird beim Vergleich
   // genauso umgerechnet.
   //

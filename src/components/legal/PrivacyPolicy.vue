@@ -8,7 +8,7 @@
 //
 // Kommt später eine Funktion dazu (Werbung, Analyse, Konten …), gehören die
 // passenden Abschnitte ergänzt. Fertige Textbausteine dafür stehen in
-// LEGAL_AND_PRIVACY_SETUP.md.
+// RECHTLICHES.md.
 import LegalModal from './LegalModal.vue'
 import { hasOperatorAddress, displayOperatorInfo } from '../../config/legalConfig'
 

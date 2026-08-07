@@ -6,8 +6,8 @@ import { computed, ref, watch } from 'vue'
 
 import { createDefaultTiers } from '../data/defaultTiers'
 import { TIER_COLOR_PALETTE } from '../data/tierColors'
-import { clearTierLists, loadTierLists, saveTierLists } from '../storage/tierListStorage'
-import { downloadTierListAsJson } from '../utils/exportTierList'
+import { clearTierLists, loadTierLists, saveTierLists } from '../storage/tierLists'
+import { downloadTierListAsJson } from '../utils/exportAsJson'
 import {
   MAX_ITEMS_PER_LIST,
   sanitizeItemName,
@@ -250,7 +250,7 @@ export function useTierLists() {
 
   // Fügt mehrere Items auf einmal hinzu, jeweils mit einem Bild.
   // newImageItems ist eine Liste aus { name, image } (kommt z. B. aus
-  // useImageUpload.js, wenn mehrere Bilddateien per Drag & Drop oder
+  // imageImport.js, wenn mehrere Bilddateien per Drag & Drop oder
   // Dateiauswahl ausgewählt wurden).
   //
   // Bilder, die schon in der aktiven Tierlist vorhanden sind (im Pool ODER in

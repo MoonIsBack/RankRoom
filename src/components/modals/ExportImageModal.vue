@@ -12,7 +12,7 @@ import {
   openImageFile,
   renderTierListToCanvas,
   shareImageFile,
-} from '../../utils/exportTierListImage'
+} from '../../utils/exportAsImage'
 
 const props = defineProps({
   tierList: {

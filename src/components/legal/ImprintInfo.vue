@@ -19,7 +19,7 @@
 //   - § 5 DDG verlangt zusätzlich eine E-Mail-Adresse und eine zweite schnelle
 //     Kontaktmöglichkeit, greift aber erst bei geschäftsmäßigen, in der Regel
 //     entgeltlichen Angeboten (z. B. sobald Werbung oder Premium dazukommt).
-// Näheres in LEGAL_AND_PRIVACY_SETUP.md.
+// Näheres in RECHTLICHES.md.
 import LegalModal from './LegalModal.vue'
 import {
   displayCommercialInfo,

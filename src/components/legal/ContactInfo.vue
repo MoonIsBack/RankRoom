@@ -7,7 +7,7 @@
 // datenschutzrechtlich schlechter als der einfache mailto:-Link hier.
 //
 // Was für ein echtes Formular nötig wäre (Server, Spam-Schutz, Löschfristen,
-// Auftragsverarbeitungsvertrag), steht in LEGAL_AND_PRIVACY_SETUP.md.
+// Auftragsverarbeitungsvertrag), steht in RECHTLICHES.md.
 //
 // Diese Komponente wird nur angezeigt, wenn in legalConfig.js tatsächlich eine
 // E-Mail-Adresse eingetragen ist (siehe canShowContact()).

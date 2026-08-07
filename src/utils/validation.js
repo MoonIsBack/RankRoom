@@ -36,7 +36,7 @@ export const MAX_JSON_FILE_SIZE = 25 * 1024 * 1024 // 25 MB je Import-Datei
 // Längste Kante, auf die eingelesene Bilder heruntergerechnet werden.
 // 1600px reichen für die Anzeige und für den Bild-Export (dort ist eine
 // Item-Kachel 88px groß, bei doppelter Auflösung also 176px) mit großem
-// Sicherheitsabstand. Siehe useImageUpload.js.
+// Sicherheitsabstand. Siehe imageImport.js.
 export const MAX_IMAGE_DIMENSION = 1600
 
 // Erlaubte Anfänge einer Bild-Data-URL. Wird beim JSON-Import gebraucht:

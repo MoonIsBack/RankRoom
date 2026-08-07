@@ -41,8 +41,8 @@ import { useTierLists } from './composables/useTierLists'
 import { usePointerDrag } from './composables/usePointerDrag'
 import { useRowPointerDrag } from './composables/useRowPointerDrag'
 import { useFileDropZone } from './composables/useFileDropZone'
-import { readImageFiles } from './composables/useImageUpload'
-import { parseTierListFile } from './utils/importTierList'
+import { readImageFiles } from './utils/imageImport'
+import { parseTierListFile } from './utils/importFromJson'
 
 // Alles rund um Tierlisten (laden, speichern, erstellen, löschen, Items verwalten).
 // Die Funktionen mit "as ...Store" werden gleich noch um Drag-Reset und

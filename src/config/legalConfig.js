@@ -5,7 +5,7 @@
 // ausschalten will, ändert eine Zeile in dieser Datei; niemand muss dafür in
 // Komponenten herumsuchen.
 //
-// Ausführliche Anleitung dazu: LEGAL_AND_PRIVACY_SETUP.md im Projektordner.
+// Ausführliche Anleitung dazu: RECHTLICHES.md im Projektordner.
 
 // =============================================================================
 // ⚠️  VORSCHAU-MODUS  ⚠️
@@ -81,7 +81,7 @@ export const legalConfig = {
 // er veröffentlichen möchte. Es werden bewusst keine Daten aus Git, aus dem
 // Betriebssystem oder von irgendwoher automatisch übernommen.
 //
-// Was hier hineingehört, erklärt LEGAL_AND_PRIVACY_SETUP.md.
+// Was hier hineingehört, erklärt RECHTLICHES.md.
 // Für den Vorschau-Modus: erkennbare Platzhalter statt echter Angaben.
 //
 // Bewusst in eckigen Klammern und in Großbuchstaben, damit sie auf keinem
@@ -221,7 +221,7 @@ export function canShowImprint() {
       console.warn(
         '[RankRoom] Das Impressum ist eingeschaltet (showImprint: true), aber es fehlen ' +
           'Pflichtangaben in operatorInfo (Name, Straße, PLZ, Ort). Das Impressum bleibt ' +
-          'deshalb ausgeblendet. Siehe LEGAL_AND_PRIVACY_SETUP.md.',
+          'deshalb ausgeblendet. Siehe RECHTLICHES.md.',
       )
     }
 
