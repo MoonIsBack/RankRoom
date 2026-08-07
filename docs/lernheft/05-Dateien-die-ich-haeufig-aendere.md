@@ -64,7 +64,7 @@ etwas verschweigt, ist ein Problem.
 
 ---
 
-## 5. `src/components/AppFooter.vue`
+## 5. `src/components/layout/AppFooter.vue`
 
 **Was:** Der Fußbereich.
 
@@ -93,7 +93,7 @@ Die **Funktionen** in dieser Datei fasst du dagegen fast nie an → `06-Dateien-
 
 ---
 
-## 7. `src/components/AppHeader.vue`
+## 7. `src/components/layout/AppHeader.vue`
 
 **Was:** Kopfzeile und Burger-Menü.
 

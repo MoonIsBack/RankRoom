@@ -5,7 +5,7 @@
 // die kein Bild brauchen.
 import { ref } from 'vue'
 
-import { ALLOWED_IMAGE_ACCEPT } from '../composables/useImageUpload'
+import { ALLOWED_IMAGE_ACCEPT } from '../../composables/useImageUpload'
 
 const emit = defineEmits(['add-item', 'add-files'])
 

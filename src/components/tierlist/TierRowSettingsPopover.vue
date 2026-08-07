@@ -9,7 +9,7 @@
 // in dessen Nähe positioniert.
 import { computed, onMounted, ref } from 'vue'
 
-import { TIER_COLOR_PALETTE } from '../data/tierColors'
+import { TIER_COLOR_PALETTE } from '../../data/tierColors'
 
 const props = defineProps({
   tierName: {

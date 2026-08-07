@@ -10,7 +10,7 @@
 // sie kopieren, in einem neuen Tab öffnen und weitergeben — genau das erwartet
 // man bei Datenschutz und Impressum. Der Klick wird trotzdem abgefangen, damit
 // sich das Popup ohne Seitensprung öffnet.
-import { legalConfig } from '../config/legalConfig'
+import { legalConfig } from '../../config/legalConfig'
 
 defineProps({
   // [{ page, label, href }] — bereits gefiltert

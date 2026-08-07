@@ -24,6 +24,8 @@ RankRoom/
     │
     ├── assets/           main.css — Farben und Grundstile
     ├── components/       Sichtbare Bausteine (Vue-Dateien)
+    │   ├── layout/       Rahmen der Seite: Kopf, Fuß, Begrüßung
+    │   ├── tierlist/     Die Tierlist selbst: Reihen, Karten, Vorrat
     │   ├── legal/        Rechtliche Seiten
     │   └── modals/       Popups
     ├── composables/      Wiederverwendbare Logik ohne Aussehen

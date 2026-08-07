@@ -9,7 +9,7 @@
 // sobald previewMode in src/config/legalConfig.js auf false steht.
 import { ref } from 'vue'
 
-import { previewMode } from '../config/legalConfig'
+import { previewMode } from '../../config/legalConfig'
 
 // Lässt sich wegklicken, damit er beim Beurteilen des Layouts nicht im Weg ist.
 // Bewusst NICHT gespeichert: Nach dem nächsten Neuladen ist er wieder da —

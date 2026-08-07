@@ -29,7 +29,10 @@ Erfordert Node 22.18+ oder 24.12+.
 
 ```
 src/
-  components/    Vue-Komponenten (Reihen, Karten, Kopfzeile)
+  components/    Vue-Komponenten
+    layout/      Rahmen der Seite: Kopfzeile, Fußzeile, Begrüßung
+    tierlist/    Die Tierlist selbst: Reihen, Karten, Vorrat
+    legal/       Rechtliche Seiten
     modals/      Popups, alle auf Basis von BaseModal.vue
   composables/   Wiederverwendbare Logik ohne eigenes Aussehen
   utils/         Reine Hilfsfunktionen (Export, Import, Dateinamen)

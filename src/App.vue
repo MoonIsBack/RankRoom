@@ -5,15 +5,18 @@
 // Komponenten weiter.
 import { ref } from 'vue'
 
-import AppHeader from './components/AppHeader.vue'
-import AppFooter from './components/AppFooter.vue'
-import PreviewBadge from './components/PreviewBadge.vue'
-import HeroSection from './components/HeroSection.vue'
-import TierRow from './components/TierRow.vue'
-import StatsGrid from './components/StatsGrid.vue'
-import AddItemForm from './components/AddItemForm.vue'
-import ItemPool from './components/ItemPool.vue'
-import ItemCard from './components/ItemCard.vue'
+// Rahmen der Seite: Kopfzeile, Fußzeile, Begrüßungsbereich
+import AppHeader from './components/layout/AppHeader.vue'
+import AppFooter from './components/layout/AppFooter.vue'
+import HeroSection from './components/layout/HeroSection.vue'
+
+// Die Tierlist selbst: Reihen, Karten, Vorrat und das Hinzufügen-Formular
+import TierRow from './components/tierlist/TierRow.vue'
+import StatsGrid from './components/tierlist/StatsGrid.vue'
+import AddItemForm from './components/tierlist/AddItemForm.vue'
+import ItemPool from './components/tierlist/ItemPool.vue'
+import ItemCard from './components/tierlist/ItemCard.vue'
+
 import ResetModal from './components/modals/ResetModal.vue'
 import SavedListsModal from './components/modals/SavedListsModal.vue'
 import NewTierListModal from './components/modals/NewTierListModal.vue'
@@ -29,6 +32,7 @@ import ImprintInfo from './components/legal/ImprintInfo.vue'
 import TermsOfUse from './components/legal/TermsOfUse.vue'
 import ContactInfo from './components/legal/ContactInfo.vue'
 import CookieSettings from './components/legal/CookieSettings.vue'
+import PreviewBadge from './components/legal/PreviewBadge.vue'
 
 import { useLegalPages } from './composables/useLegalPages'
 import { useRecentlyAdded } from './composables/useRecentlyAdded'

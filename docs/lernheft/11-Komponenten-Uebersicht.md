@@ -4,20 +4,24 @@
 
 Eine Landkarte aller sichtbaren Bausteine. Details stehen jeweils auf eigenen Seiten.
 
-## Hauptkomponenten (`src/components/`)
+## Rahmen der Seite (`src/components/layout/`)
 
 | Datei | Zeilen | Was macht sie? |
 |---|---|---|
 | `AppHeader.vue` | 672 | Kopfzeile, Logo, Burger-Menü |
 | `HeroSection.vue` | 157 | Begrüßungstext + Karte „Aktuelle Liste" |
+| `AppFooter.vue` | 161 | Fußbereich mit Rechtslinks |
+
+## Die Tierlist selbst (`src/components/tierlist/`)
+
+| Datei | Zeilen | Was macht sie? |
+|---|---|---|
 | `StatsGrid.vue` | 86 | Drei Zahlen-Kacheln |
 | `TierRow.vue` | 378 | **Eine** Reihe (S, A, B …) |
 | `TierRowSettingsPopover.vue` | 341 | Zahnrad-Menü einer Reihe |
 | `ItemCard.vue` | 507 | **Eine** Karte |
 | `ItemPool.vue` | 105 | Der Bereich unten mit unsortierten Items |
 | `AddItemForm.vue` | 454 | „Bilder auswählen" + Namensfeld |
-| `AppFooter.vue` | 161 | Fußbereich mit Rechtslinks |
-| `PreviewBadge.vue` | 157 | Schwebender Hinweis im Vorschau-Modus |
 
 ## Popups (`src/components/modals/`)
 
@@ -42,6 +46,7 @@ Eine Landkarte aller sichtbaren Bausteine. Details stehen jeweils auf eigenen Se
 | `TermsOfUse.vue` | Nutzungsbedingungen |
 | `ContactInfo.vue` | Kontakt |
 | `CookieSettings.vue` | Cookie-Demo (ohne Wirkung) |
+| `PreviewBadge.vue` | Schwebender Hinweis im Vorschau-Modus |
 
 ## Wie sie ineinander stecken
 
