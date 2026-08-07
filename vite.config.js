@@ -43,6 +43,16 @@ const CONTENT_SECURITY_POLICY = [
   // Keine Flash-/Java-/Objekt-Einbettungen
   "object-src 'none'",
 
+  // RankRoom bettet nichts ein — kein iframe, kein Video, keine Karte.
+  // 'none' ist hier strenger als das 'self' der Grundregel: Selbst ein
+  // eingeschleustes iframe von DIESER Seite würde blockiert.
+  "frame-src 'none'",
+
+  // Es gibt weder Web Worker noch einen Service Worker. Gerade ein
+  // eingeschleuster Service Worker wäre besonders unangenehm, weil er sich
+  // im Browser festsetzt und auch nach dem Schließen des Tabs bestehen bleibt.
+  "worker-src 'none'",
+
   // Verhindert, dass eine eingeschleuste <base>-Angabe alle relativen Pfade
   // auf einen fremden Server umbiegt
   "base-uri 'self'",
@@ -73,24 +83,25 @@ const CONTENT_SECURITY_POLICY = [
 // als etwas einzubauen, das nachweislich nichts tut. Bei einem späteren Umzug
 // auf einen eigenen Hoster gehört sie als echter Header nachgerüstet.
 //
-// AUS DEMSELBEN GRUND FEHLEN DIESE DREI — bewusst, nicht vergessen:
+// AUS DEMSELBEN GRUND FEHLEN DIESE ZWEI — bewusst, nicht vergessen:
 //
-//   Referrer-Policy      würde verhindern, dass beim Weiterklicken die genaue
-//                        Herkunftsadresse mitgeschickt wird. RankRoom verlinkt
-//                        derzeit ohnehin nirgendwohin nach außen, der Verlust
-//                        ist also klein — nachrüsten, sobald externe Links
-//                        dazukommen.
 //   Permissions-Policy   würde Kamera, Mikrofon und Standort ausdrücklich
 //                        abschalten. RankRoom fragt keines davon ab, das ist
 //                        also nur zusätzliche Absicherung, keine Lücke.
 //   HSTS                 erzwingt HTTPS für künftige Aufrufe. GitHub Pages
 //                        liefert eigene Domains ohnehin nur über HTTPS aus.
 //
-// Alle drei sind ausschließlich als HTTP-Header wirksam und lassen sich bei
-// einem statischen Hoster ohne Header-Konfiguration nicht setzen. Sie hier als
+// Beide sind ausschließlich als HTTP-Header wirksam und lassen sich bei einem
+// statischen Hoster ohne Header-Konfiguration nicht setzen. Sie hier als
 // Meta-Angabe hinzuschreiben würde nichts bewirken und nur Schein-Sicherheit
 // vortäuschen. Beim Umzug auf einen eigenen Hoster gehören sie mit auf die
 // Liste.
+//
+// NICHT VERWECHSELN — die Referrer-Policy geht doch:
+// Als HTTP-Header "Referrer-Policy" wäre auch sie hier nicht setzbar. Es gibt
+// dafür aber eine zweite, eigenständige Form: <meta name="referrer"> in der
+// index.html. Die ist im HTML-Standard vorgesehen, wirkt ohne jeden Header und
+// steht dort bereits auf "no-referrer".
 function cspPlugin() {
   return {
     name: 'rankroom-csp',

@@ -17,6 +17,22 @@
       die Schriftgröße der Eingabefelder, nicht das Aussperren aller Nutzer.
     -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Verrät beim Verlassen der Seite nicht, woher der Besucher kam.
+
+      Klickt jemand auf einen Link nach außen, schickt der Browser sonst die
+      genaue Herkunftsadresse mit. RankRoom verlinkt derzeit nirgendwohin, aber
+      genau deshalb kostet die strengste Einstellung hier auch nichts — und sie
+      gilt bereits, falls später einmal ein Link dazukommt.
+
+      WICHTIG, weil leicht zu verwechseln: Als HTTP-Header "Referrer-Policy"
+      ließe sich das auf GitHub Pages NICHT setzen, dort sind eigene Header
+      nicht möglich. Diese Form hier — <meta name="referrer"> — ist eine eigene,
+      im HTML-Standard vorgesehene Angabe und wirkt auch ohne Header.
+    -->
+    <meta name="referrer" content="no-referrer" />
+
     <title>RankRoom</title>
   </head>
   <body>
