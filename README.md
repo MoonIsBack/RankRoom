@@ -19,9 +19,15 @@ Daten bleiben im `localStorage` des Geräts.
 npm install
 npm run dev      # Entwicklungsserver
 npm run build    # Produktionsbuild nach dist/
+npm test         # Vitest einmal ausführen
 npm run lint     # oxlint + ESLint
 npm run format   # Prettier
 ```
+
+Getestet werden die zustandslosen Funktionen in `src/utils/`. Die Testdatei
+liegt jeweils daneben (`validation.js` → `validation.test.js`). In der
+GitHub-Action laufen die Tests vor dem Build — ein roter Test verhindert die
+Veröffentlichung.
 
 Erfordert Node 22.18+ oder 24.12+.
 

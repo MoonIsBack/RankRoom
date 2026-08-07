@@ -30,6 +30,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Läuft VOR dem Build: Schlägt ein Test fehl, bricht die Action hier ab
+      # und es wird nichts veröffentlicht. Genau dafür sind die Tests da.
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 

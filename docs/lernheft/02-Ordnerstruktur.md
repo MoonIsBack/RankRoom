@@ -46,6 +46,24 @@ RankRoom/
 | `config/` | Schalter zum Umstellen, kein Code der etwas tut |
 | `data/` | Feste Listen und Werte |
 
+## Drei Regeln, damit es aufgeräumt bleibt
+
+**1. Neue Komponenten kommen in einen Unterordner, nie flach in `components/`.**
+Frag dich: Gehört das zum Rahmen der Seite (`layout/`), zur Tierlist selbst
+(`tierlist/`), ist es ein Popup (`modals/`) oder rechtlich (`legal/`)? Passt
+nichts davon, ist das ein Zeichen, dass ein neuer Unterordner fällig ist.
+
+**2. Reine Rechenfunktionen gehören nach `utils/`, nicht in ein Composable.**
+Der Test dafür ist einfach: Braucht die Funktion `ref`, `watch` oder sonst
+etwas aus Vue? Nein → sie gehört nach `utils/`. So entstand `dragGeometry.js`:
+Die Rechnerei mit Rechtecken lag mitten in `usePointerDrag.js`, obwohl sie von
+Vue nichts weiß.
+
+**3. Was in `utils/` liegt, bekommt einen Test.**
+Genau weil diese Funktionen zustandslos sind, kosten Tests dort fast nichts —
+und sie sind die Stellen, an denen ein stiller Fehler am längsten unbemerkt
+bliebe. Die Testdatei liegt direkt daneben: `validation.js` → `validation.test.js`.
+
 ## 💡 Merken
 
 **Der Unterschied Composable vs. Utility:**

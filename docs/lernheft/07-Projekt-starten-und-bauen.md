@@ -53,6 +53,24 @@ Ein Unterschied zu `npm run dev`: Nur hier ist die Sicherheitsregel (CSP) aktiv.
 
 ---
 
+### `npm test`
+
+Führt die Tests einmal aus und sagt dir, ob noch alles funktioniert.
+
+Getestet werden die **reinen Rechenfunktionen** in `src/utils/` — also die,
+die nichts von Vue oder vom Browser wissen: aus Eingabe wird Ausgabe, immer
+gleich. Genau die lassen sich ohne Aufwand prüfen.
+
+Es gibt außerdem `npm run test:watch`. Das bleibt offen und führt die Tests
+bei jedem Speichern automatisch neu aus — praktisch, während du an einer
+dieser Funktionen arbeitest.
+
+**Wann brauchst du das?** Immer, wenn du an `utils/` etwas änderst. Und immer
+vor einem Commit, denn seit die Tests in der GitHub-Action laufen, blockiert
+ein roter Test die Veröffentlichung.
+
+---
+
 ### `npm run format` und `npm run lint`
 
 - **format** — bringt den Code in einheitliche Form (Einrückung, Anführungszeichen)
@@ -67,6 +85,7 @@ reicht völlig.
 npm run dev          ← läuft nebenher, während du arbeitest
 ... Änderungen machen, im Browser schauen ...
 npm run build        ← prüft, ob alles heil ist
+npm test             ← prüft, ob die Rechenfunktionen noch stimmen
 npm run format
 npm run lint
 git add -A && git commit
@@ -89,4 +108,5 @@ dass die CSP es blockiert.
 
 - **`npm run dev`** = arbeiten
 - **`npm run build`** = prüfen
+- **`npm test`** = stimmt es noch?
 - **`npm run preview`** = so sieht es wirklich aus

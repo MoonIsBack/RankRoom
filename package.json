@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
@@ -27,6 +29,7 @@
     "oxlint": "~1.69.0",
     "prettier": "3.8.4",
     "vite": "^8.0.16",
+    "vitest": "^4.1.10",
     "vue-eslint-parser": "^10.4.1"
   },
   "engines": {
