@@ -159,6 +159,19 @@ export function useTierLists() {
   // Sobald sich tierLists oder die aktive Liste ändert, automatisch in den
   // localStorage speichern. { deep: true } sorgt dafür, dass auch Änderungen
   // TIEF in den Objekten (z. B. ein neues Item in einer Tier-Reihe) erkannt werden.
+  // Merkt sich, über welche Art von Speicherproblem in dieser Sitzung schon
+  // einmal gewarnt wurde.
+  //
+  // WICHTIG und der Grund, warum es diesen Merker überhaupt gibt: Wenn der
+  // Browser das Speichern KOMPLETT blockiert (z. B. Brave mit strengem Schutz
+  // oder der private Modus), schlägt JEDE einzelne Änderung fehl — schon das
+  // bloße Umbenennen einer Reihe. Ohne diesen Merker würde die Meldung nach
+  // jedem Klick auf "Verstanden" bei der nächsten Änderung sofort wieder
+  // aufpoppen. Anders als storageNotice wird dieser Merker deshalb NICHT beim
+  // Schließen der Meldung zurückgesetzt: einmal Bescheid sagen reicht, danach
+  // kann man in Ruhe weiterarbeiten.
+  const warnedStorageReasons = new Set()
+
   watch(
     [tierLists, activeTierListId],
     () => {
@@ -168,15 +181,19 @@ export function useTierLists() {
         return
       }
 
-      // Speichern fehlgeschlagen. Früher fiel das komplett unter den Tisch —
-      // die Änderung war auf dem Bildschirm zu sehen, aber nach dem nächsten
-      // Neuladen wieder weg. Jetzt erfährt der Nutzer davon.
-      //
-      // Nur die erste Meldung setzen: Bei vollem Speicher schlägt sonst jede
-      // weitere Änderung erneut fehl und würde das Popup endlos neu öffnen.
+      // Über diese Art Problem wurde in dieser Sitzung schon gewarnt → still bleiben
+      if (warnedStorageReasons.has(result.reason)) {
+        return
+      }
+
+      // Es ist gerade schon eine andere Meldung offen → nicht überschreiben,
+      // sondern beim nächsten Mal zeigen (dann ist dieser Grund noch nicht
+      // als "gewarnt" vermerkt)
       if (storageNotice.value) {
         return
       }
+
+      warnedStorageReasons.add(result.reason)
 
       storageNotice.value =
         result.reason === 'quota'
@@ -190,10 +207,10 @@ export function useTierLists() {
           : {
               title: 'Speichern nicht möglich',
               text:
-                'RankRoom kann in diesem Browser nichts speichern. Das passiert zum Beispiel ' +
-                'im privaten Modus oder wenn das Speichern von Website-Daten gesperrt ist. ' +
-                'Du kannst weiterarbeiten, aber deine Listen sind nach dem Schließen weg — ' +
-                'exportiere sie vorher als Datei.',
+                'Dein Browser blockiert das Speichern von Website-Daten — das machen zum ' +
+                'Beispiel Brave mit strengem Schutz oder der private Modus. Du kannst RankRoom ' +
+                'trotzdem ganz normal benutzen; deine Liste ist nur nach dem Schließen des Tabs ' +
+                'weg. Tipp: exportiere sie vorher als Datei, oder senke den Schutz für diese Seite.',
             }
     },
     { deep: true },
