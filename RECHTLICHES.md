@@ -3,25 +3,32 @@
 Diese Datei erklärt, wie die rechtlichen Bereiche von RankRoom aufgebaut sind, was
 gerade aktiv ist, und was du tun musst, bevor du die Seite öffentlich bewirbst.
 
+**Stand:** 20.10.2026 — Schalter und Felder gegen `src/config/legalConfig.js`
+geprüft.
+
 > **Keine Rechtsberatung.** Die Texte sind nach bestem Wissen und mit Quellenbelegen
 > formuliert, ersetzen aber keine anwaltliche Prüfung. Niemand kann dir garantieren,
 > dass eine Website „abmahnsicher" ist — das gibt es rechtlich nicht.
 
 ---
 
-## 0. ⚠️ Vorschau-Modus ist derzeit EINGESCHALTET
+## 0. Vorschau-Modus — derzeit AUSGESCHALTET
 
-Ganz oben in `src/config/legalConfig.js` steht:
+Ganz oben in `src/config/legalConfig.js` steht (seit dem 22.07.2026):
 
 ```js
-export const previewMode = true
+export const previewMode = false
 ```
 
-Solange das so ist, sind **alle** rechtlichen Bereiche sichtbar — auch die, deren
-Angaben noch gar nicht ausgefüllt sind. Das ist eine Ansichtssache zum Beurteilen des
-Erscheinungsbildes, **kein veröffentlichungsfähiger Zustand**.
+Das ist der Normalbetrieb: Es gelten die Regeln aus Abschnitt 1.
 
-Erkennbar ist er an drei Stellen:
+**Wozu es den Schalter gibt:** Mit `previewMode = true` sind **alle** rechtlichen
+Bereiche sichtbar — auch die, deren Angaben noch gar nicht ausgefüllt sind. Das ist
+eine Ansichtssache zum Beurteilen des Erscheinungsbildes, **kein
+veröffentlichungsfähiger Zustand**. Vor dem nächsten Push muss er wieder auf `false`
+stehen.
+
+Erkennbar ist der Vorschau-Modus an drei Stellen:
 - ein oranges **Vorschau-Band** oben in jeder rechtlichen Seite
 - ein schwebendes **Vorschau-Abzeichen** unten rechts auf der Seite
 - **Platzhalter in eckigen Klammern** statt echter Angaben, z. B.
@@ -267,7 +274,8 @@ zeigt fünf Kategorien mit Schaltern, aber:
   so muss es in einer echten Umsetzung auch sein
 
 Sie ist im Normalbetrieb über `legalConfig.showCookieSettings: false` ausgeschaltet und
-erscheint derzeit nur, weil der Vorschau-Modus läuft.
+erscheint nur, solange der Vorschau-Modus läuft. Der ist derzeit aus (Abschnitt 0) —
+die Demo ist also gerade nirgends zu sehen.
 
 **Wenn wirklich einmal ein einwilligungspflichtiger Dienst dazukommt, muss diese Datei
 durch eine echte Umsetzung ersetzt werden** — die Anforderungen dafür stehen direkt
@@ -378,11 +386,23 @@ Seite unsichtbar in seine eigene einbettet) wirkt **ausschließlich** als HTTP-H
 und wird in einem Meta-Tag ignoriert. GitHub Pages erlaubt keine eigenen Header.
 Die Zeile wurde bewusst weggelassen, statt etwas einzubauen, das nachweislich nichts
 tut. Bei einem Umzug auf einen eigenen Hoster als echten Header nachrüsten — dann
-gleich zusammen mit `Referrer-Policy`, `Permissions-Policy` und HSTS.
+gleich zusammen mit `Permissions-Policy` und HSTS.
+
+**Seit dem 07.08.2026 zusätzlich in der CSP:** `frame-src 'none'` (kein iframe, auch
+kein eingeschleustes) und `worker-src 'none'` (kein Web Worker, kein Service Worker).
+Die vollständige Liste steht in `vite.config.js`.
+
+### Referrer-Schutz
+
+Als HTTP-Header `Referrer-Policy` ginge das auf GitHub Pages ebenfalls nicht. Es gibt
+dafür aber eine eigene, im HTML-Standard vorgesehene Form, die auch ohne Header wirkt:
+In `index.html` steht seit dem 07.08.2026
+`<meta name="referrer" content="no-referrer">`. Der Browser verrät damit beim Klick
+auf einen Link nach außen nicht, woher der Besucher kam.
 
 ### EXIF-Entfernung
 
-`src/composables/imageImport.js`. Jedes eingelesene Bild wird über ein Canvas neu
+`src/utils/imageImport.js`. Jedes eingelesene Bild wird über ein Canvas neu
 gezeichnet und dabei auf **1600 Pixel** längste Kante begrenzt (`MAX_IMAGE_DIMENSION`
 in `src/utils/validation.js`). Dabei bleiben nur die sichtbaren Bildpunkte übrig —
 GPS-Koordinaten, Aufnahmezeit und Kameramodell fallen weg.
@@ -423,9 +443,10 @@ dass `v-html` genau diesen Schutz aushebeln würde.
 
 ## 11. Hinweis zu deinen persönlichen Daten
 
-In den **Git-Commit-Metadaten** dieses Repositories steht `moonsocialmail@gmail.com`
-als Autor-Adresse aller Commits. Bei einem öffentlichen Repository ist die über die
-GitHub-API einsehbar.
+In den **Git-Commit-Metadaten** dieses Repositories steht deine Autor-E-Mail-Adresse
+(die in der Git-Einstellung `user.email` hinterlegte) bei allen Commits. Bei einem
+öffentlichen Repository ist sie über die GitHub-API einsehbar — und das
+RankRoom-Repository ist laut GitHub öffentlich (Stand 21.10.2026).
 
 Das ist kein Fehler und wurde **nirgendwo in die App übernommen** — du solltest es nur
 wissen, falls du davon ausgingst, dass die Adresse privat ist. Wenn du das ändern

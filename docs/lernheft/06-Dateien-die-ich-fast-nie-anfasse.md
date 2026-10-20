@@ -11,9 +11,11 @@ ihnen ansieht, und eine kleine Änderung kann viel kaputtmachen.
 
 ## 1. `usePointerDrag.js` 🔴 Am gefährlichsten
 
+`src/composables/usePointerDrag.js`
+
 **Warum nicht anfassen:**
-Das ist das Herzstück. 656 Zeilen, die in vielen Durchgängen entstanden sind, weil
-Drag & Drop erstaunlich schwierig ist.
+Das ist das Herzstück. Rund 600 Zeilen (607, Stand 20.10.2026), die in vielen
+Durchgängen entstanden sind, weil Drag & Drop erstaunlich schwierig ist.
 
 Die Datei arbeitet mit **eingefrorener Geometrie**: Beim Anfassen wird einmal
 gemessen, wo alles liegt — danach wird nicht mehr gemessen. Das klingt umständlich,
@@ -30,6 +32,8 @@ mit Maus **und** Finger.
 
 ## 2. `validation.js` — die Funktionen
 
+`src/utils/validation.js`
+
 **Warum nicht anfassen:**
 `hasForbiddenKeys()` und `isAllowedImageDataUrl()` sind Sicherheitsprüfungen für
 importierte Dateien. Sie sehen unscheinbar aus, verhindern aber, dass eine
@@ -44,20 +48,26 @@ darunter nicht.
 
 ## 3. `tierListFormat.js`
 
+`src/utils/tierListFormat.js`
+
 **Warum nicht anfassen:**
-Winzige Datei (16 Zeilen), aber sie ist die Vereinbarung zwischen Export und Import.
+Winzige Datei (24 Zeilen, fast nur Kommentare und drei Konstanten), aber sie ist
+die Vereinbarung zwischen Export und Import.
 
 Änderst du `EXPORT_FORMAT`, kann RankRoom **alle bisher exportierten Dateien nicht
 mehr lesen**. Und die Dateien deiner Nutzer auch nicht.
 
 `CURRENT_FORMAT_VERSION` erhöhst du nur, wenn du das Dateiformat wirklich änderst —
-und dann musst du gleichzeitig eine Umwandlung für alte Dateien einbauen.
+und dann musst du gleichzeitig eine Umwandlung für alte Dateien einbauen und die neue
+Version in `SUPPORTED_FORMAT_VERSIONS` ergänzen.
 
 → `25-Versionierung` (geplant)
 
 ---
 
 ## 4. `tierLists.js`
+
+`src/storage/tierLists.js`
 
 **Warum nicht anfassen:**
 Jede Zeile fängt einen Fehlerfall ab, der vorher zum Absturz führte:
@@ -74,9 +84,12 @@ Das sieht nach viel `try/catch` aus, aber jedes einzelne hat einen Grund.
 
 ## 5. `BaseModal.vue` — der Skript-Teil
 
+`src/components/modals/BaseModal.vue`
+
 **Warum nicht anfassen:**
-Darin steckt die komplette Tastaturbedienung für **alle sieben Popups** gleichzeitig:
-Escape, Fokusfalle, Fokusrückgabe.
+Darin steckt die komplette Tastaturbedienung für **alle sieben Popups** in
+`components/modals/` gleichzeitig — und über `LegalModal.vue` auch für alle
+Rechtsseiten: Escape, Fokusfalle, Fokusrückgabe.
 
 Eine Änderung hier wirkt überall. Das CSS darunter darfst du dagegen gern anpassen.
 
@@ -99,6 +112,8 @@ Zwei Zeilen sind lebenswichtig:
 ---
 
 ## 7. `autoScroll.js`
+
+`src/utils/autoScroll.js`
 
 **Warum nicht anfassen:**
 Sehr kleine Datei, aber die Zahlen sind eingestellt, bis es sich gut anfühlte.

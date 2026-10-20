@@ -18,7 +18,8 @@ spring dahin, wo dein Problem gerade ist.
 
 ## ⚠ Wichtig: das Heft ist noch nicht fertig
 
-**15 von 54 Seiten sind geschrieben.** Der Rest ist geplant, existiert aber noch nicht.
+**15 von 54 Seiten sind geschrieben** (Stand 20.10.2026). Der Rest ist geplant,
+existiert aber noch nicht.
 
 Deshalb steht in der Liste unten vor jedem Eintrag:
 
@@ -125,7 +126,15 @@ Alle vier sind fertig:
 
 ## 💡 Merken
 
-Dieses Heft beschreibt den Stand vom **Commit `eef9264`** (August 2026).
+Dieses Heft beschreibt den Stand vom **Commit `eef9264`** (08.08.2026). Seitdem hat
+sich in `src/` nichts mehr geändert — danach kamen nur Doku, `package-lock.json` und
+`.gitignore` dazu.
+
+Die Seiten 01, 02, 05, 06 und 07 wurden am **20.10.2026** gegen den echten Code
+geprüft und nachgezogen. In den Seiten 03, 13 und 22 wurden am selben Tag einzelne
+Zahlen berichtigt (Schritte, Tests, Zeilen); die Zeilenzahlen in 11, 12, 13, 21
+und 22 stimmen mit dem Code überein. Alles Übrige ist nicht Zeile für Zeile
+geprüft und kann in Einzelheiten abweichen.
 
 Wenn du später größere Sachen änderst, denk dran, die betroffene Seite hier auch
 anzupassen — **und den Haken umzustellen**, wenn eine geplante Seite fertig wird.

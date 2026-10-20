@@ -14,7 +14,7 @@ Rein rein, raus raus. Keine Nebenwirkungen, kein Gedächtnis. **Diese haben Test
 
 | Datei | Zeilen | Aufgabe | Test |
 |---|---|---|---|
-| `validation.js` | 138 | Grenzwerte und Prüfungen | ✅ 17 Tests |
+| `validation.js` | 138 | Grenzwerte und Prüfungen | ✅ 16 Tests |
 | `dragGeometry.js` | 69 | Rechteck-Rechnerei fürs Ziehen | ✅ 14 Tests |
 | `fileName.js` | 11 | Sicheren Dateinamen erzeugen | ✅ 6 Tests |
 | `tierListFormat.js` | 24 | Format-Kennung und Version | ✅ 3 Tests |
@@ -97,7 +97,7 @@ Bekommen eigene Seiten:
 Die Namen sind bewusst nach dem gleichen Muster gebaut, damit man sie beim
 Überfliegen unterscheiden kann:
 
-```
+```text
 exportAsJson.js     raus als JSON
 exportAsImage.js    raus als Bild
 importFromJson.js   rein aus JSON

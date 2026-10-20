@@ -12,7 +12,7 @@ Das ist die wichtigste Seite im ganzen Heft. Wenn du **nur eine** liest, dann di
 
 ## Bild im Kopf
 
-```
+```text
         useTierLists.js  ←→  tierLists.js  ←→  localStorage
                ↓
             App.vue   ←── usePointerDrag.js (Drag & Drop)
@@ -42,7 +42,7 @@ Du klickst auf das ✕ einer Item-Karte:
 7. Ein `watch` speichert automatisch in den `localStorage`
 8. Vue zeichnet die Oberfläche neu — die Karte ist weg
 
-**Sieben Schritte, aber jeder einzelne ist winzig.** Genau das ist der Trick.
+**Acht Schritte, aber jeder einzelne ist winzig.** Genau das ist der Trick.
 
 ## Warum ist das so gebaut?
 

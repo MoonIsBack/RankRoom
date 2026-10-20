@@ -1,6 +1,6 @@
 # ⭐📌 useTierLists.js
 
-`src/composables/useTierLists.js` — 549 Zeilen
+`src/composables/useTierLists.js` — 566 Zeilen (Stand 20.10.2026)
 
 ## Aufgabe
 

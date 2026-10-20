@@ -6,12 +6,25 @@ Damit du weißt, wo du suchen musst.
 
 ## Die Ordner
 
-```
+```text
 RankRoom/
 ├── index.html            Einstiegspunkt (fast leer, Vue füllt ihn)
 ├── package.json          Abhängigkeiten + Befehle (npm run ...)
+├── package-lock.json     Exakte Paketversionen (pflegt npm)
 ├── vite.config.js        Build-Einstellungen + Sicherheitsregel (CSP)
+├── README.md             Überblick für Fremde
 ├── RECHTLICHES.md        Anleitung für alles Rechtliche
+├── eslint.config.js      Regeln für ESLint
+├── .oxlintrc.json        Regeln für oxlint
+├── .prettierrc.json      Wie Prettier formatiert
+├── jsconfig.json         Damit der Editor @/ als src/ versteht
+├── .editorconfig         Einrückung im Editor
+├── .gitattributes        Einheitliche Zeilenenden (LF)
+├── .gitignore            Was NICHT in Git landet
+├── .vscode/              Empfohlene VS-Code-Erweiterungen
+│
+├── .github/workflows/
+│   └── deploy.yml        Testet, baut und veröffentlicht bei jedem Push auf main
 │
 ├── public/               Dateien, die 1:1 mitkopiert werden
 │   └── rankroom-icon.svg      Das Logo
@@ -32,7 +45,7 @@ RankRoom/
     ├── config/           legalConfig.js — Schalter fürs Rechtliche
     ├── data/             Feste Vorgaben (Standard-Reihen, Farben)
     ├── storage/          Zugriff auf den Browser-Speicher
-    └── utils/            Reine Funktionen OHNE Vue (+ ihre Tests)
+    └── utils/            Funktionen OHNE Vue (+ Tests für die reinen Rechenfunktionen)
 ```
 
 ## Was gehört wohin?
@@ -40,8 +53,8 @@ RankRoom/
 | Ordner | Faustregel |
 |---|---|
 | `components/` | Alles, was man **sehen** kann |
-| `composables/` | Logik, die **mehrere** Komponenten brauchen — z. B. Drag & Drop |
-| `utils/` | Reine Funktionen: rein → raus, ohne Zustand |
+| `composables/` | Logik **mit Vue-Zustand** (`ref`, `computed`, `watch`) — z. B. Drag & Drop. Jedes wird genau einmal in `App.vue` aufgerufen |
+| `utils/` | Funktionen **ohne Vue**: reine Rechenfunktionen (rein → raus) und kleine Browser-Helfer (Export, Bilder einlesen) |
 | `storage/` | Nur der Browser-Speicher, sonst nichts |
 | `config/` | Schalter zum Umstellen, kein Code der etwas tut |
 | `data/` | Feste Listen und Werte |
@@ -59,10 +72,12 @@ etwas aus Vue? Nein → sie gehört nach `utils/`. So entstand `dragGeometry.js`
 Die Rechnerei mit Rechtecken lag mitten in `usePointerDrag.js`, obwohl sie von
 Vue nichts weiß.
 
-**3. Was in `utils/` liegt, bekommt einen Test.**
+**3. Reine Rechenfunktionen in `utils/` bekommen einen Test.**
 Genau weil diese Funktionen zustandslos sind, kosten Tests dort fast nichts —
 und sie sind die Stellen, an denen ein stiller Fehler am längsten unbemerkt
 bliebe. Die Testdatei liegt direkt daneben: `validation.js` → `validation.test.js`.
+Die Browser-Helfer in `utils/` (Export, Import, Bilder, Auto-Scroll) haben keine
+Tests — sie bräuchten einen echten Browser (→ `13-Utilities-Uebersicht`).
 
 ## 💡 Merken
 
@@ -79,7 +94,8 @@ Beispiel:
 
 Der Ordner `dist/` taucht auf, sobald du `npm run build` ausführst. Der ist
 **generiert** — da niemals von Hand etwas ändern, beim nächsten Build ist es weg.
-Er liegt auch nicht in Git (steht in `.gitignore`).
+Er liegt auch nicht in Git (steht in `.gitignore`). Dasselbe gilt für die Datei
+`.eslintcache`, die bei `npm run lint` entsteht.
 
 ## Was darf ich ändern?
 
